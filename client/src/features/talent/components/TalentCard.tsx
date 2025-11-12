@@ -96,10 +96,13 @@ export function TalentCard({
               onPlusClick?.();
             }
           }}
-          className="absolute bottom-6 right-4 w-12 h-12 rounded-full transition-all duration-500 flex items-center justify-center shadow-lg overflow-hidden border border-blue-400 bg-white hover:bg-gray-50"
+          className="talent-card-button absolute bottom-6 border-[1px] border-[#009BE9] right-4 w-12 h-12 rounded-full transition-all duration-500 flex items-center justify-center shadow-lg overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, #FFFFFF 0%, #CFCFCF 100%)',
+          }}
         >
           <div 
-            className="w-6 h-6 flex items-center justify-center"
+            className="talent-card-icon w-6 h-6 flex items-center justify-center"
             style={{
               background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
               WebkitMask: isDisabled 

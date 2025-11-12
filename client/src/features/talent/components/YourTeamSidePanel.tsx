@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/shared/components/ui/Button";
+import { TezzeractButton } from "@/shared/components/ui/TezzeractButton";
 import { X, Plus, ArrowRight } from "lucide-react";
 import { YourTeamCard } from "./YourTeamCard";
 
@@ -101,12 +101,9 @@ export const YourTeamSidePanel: React.FC<YourTeamSidePanelProps> = ({
         
         {/* Create Meeting Button - Fixed at bottom */}
         <div className="pt-4 pb-4 border-t border-gray-200 space-y-3">
-          <Button 
-            className="w-full bg-gradient-to-br from-blue-800 to-blue-400 text-white hover:opacity-90 transition-all duration-200"
-          >
-            <Plus className="w-4 h-4 mr-2" /> 
-            Create Meeting
-          </Button>
+          <TezzeractButton fullWidth={true}>
+            <Plus className="w-4 h-4" /> Create meeting
+          </TezzeractButton>
         </div>
       </div>
     </div>
