@@ -158,7 +158,7 @@ export default function TalentPage() {
         {/* Chat Panel */}
         <div 
           className="flex-shrink-0 transition-all duration-300 ease-out" 
-          style={{ width: showYourTeam ? '30%' : '32%' }}
+          style={{ width: showYourTeam ? '25%' : '28%' }}
         >
           <ChatPanel
             messages={messages}
