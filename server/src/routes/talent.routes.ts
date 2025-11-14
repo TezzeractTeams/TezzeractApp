@@ -1,14 +1,25 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middleware/auth.middleware.js';
-import { getCandidates, getJobs } from '../controllers/talent.controller.js';
+import { 
+  getTalents,
+  getTalentById,
+  createTalent,
+  updateTalent,
+  deleteTalent,
+  getCandidates,
+  getJobs
+} from '../controllers/talent.controller.js';
 
 const router = Router();
 
-// All talent routes require authentication
-router.use(authenticateToken);
+// Public routes (no authentication required for now)
+router.get('/talents', getTalents);
+router.get('/talents/:id', getTalentById);
+router.post('/talents', createTalent);
+router.put('/talents/:id', updateTalent);
+router.delete('/talents/:id', deleteTalent);
 
+// Legacy routes for backward compatibility
 router.get('/candidates', getCandidates);
 router.get('/jobs', getJobs);
 
 export default router;
-

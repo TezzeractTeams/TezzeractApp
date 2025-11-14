@@ -3,6 +3,7 @@ import { useTeamStorage } from "@/shared/hooks/use-team-storage";
 import { YourTeamSidePanel } from "../components/YourTeamSidePanel";
 import { ChatPanel } from "../components/ChatPanel";
 import { AvailableTalents } from "../components/AvailableTalents";
+import { getTalents } from "@/shared/services/talentService";
 
 interface Talent {
   id: string;
@@ -21,59 +22,8 @@ interface Message {
   timestamp: Date;
 }
 
-// Mock data for talents - in production, this would come from your API
-const mockTalents: Talent[] = [
-  {
-    id: "1",
-    name: "John Doe",
-    skills: ["React", "Node.js", "TypeScript", "GraphQL"],
-    image_url: "https://randomuser.me/api/portraits/men/1.jpg",
-    experience_years: 5,
-    availability: true,
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    skills: ["Product Management", "Agile", "Scrum", "Data Analysis"],
-    image_url: "https://randomuser.me/api/portraits/women/2.jpg",
-    experience_years: 7,
-    availability: true,
-  },
-  {
-    id: "3",
-    name: "Mike Johnson",
-    skills: ["UX Design", "Figma", "Prototyping", "User Research"],
-    image_url: "https://randomuser.me/api/portraits/men/3.jpg",
-    experience_years: 4,
-    availability: false,
-  },
-  {
-    id: "4",
-    name: "Sarah Williams",
-    skills: ["Python", "Machine Learning", "TensorFlow", "Data Science"],
-    image_url: "https://randomuser.me/api/portraits/women/4.jpg",
-    experience_years: 6,
-    availability: true,
-  },
-  {
-    id: "5",
-    name: "David Brown",
-    skills: ["DevOps", "AWS", "Docker", "Kubernetes"],
-    image_url: "https://randomuser.me/api/portraits/men/5.jpg",
-    experience_years: 8,
-    availability: true,
-  },
-  {
-    id: "6",
-    name: "Emily Davis",
-    skills: ["Marketing", "SEO", "Content Strategy", "Analytics"],
-    image_url: "https://randomuser.me/api/portraits/women/6.jpg",
-    experience_years: 3,
-    availability: true,
-  },
-];
-
 export default function TalentPage() {
+  const [allTalents, setAllTalents] = useState<Talent[]>([]);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -88,6 +38,25 @@ export default function TalentPage() {
   const [showAddTalentForm, setShowAddTalentForm] = useState(false);
   const [showYourTeam, setShowYourTeam] = useState(false);
   const { team: yourTeam, addToTeam, removeFromTeam } = useTeamStorage();
+
+  // Fetch talents from API on component mount
+  useEffect(() => {
+    const fetchTalents = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getTalents();
+        setAllTalents(response.talents);
+      } catch (error) {
+        console.error('Failed to fetch talents:', error);
+        // Fallback to empty array if API fails
+        setAllTalents([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTalents();
+  }, []);
 
   // Auto-show YourTeam panel when there's at least one team member
   useEffect(() => {
@@ -110,18 +79,33 @@ export default function TalentPage() {
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response - in production, this would call your backend API
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "I've found some great talents that match your requirements. Here are the top candidates for your project:",
-        talents: mockTalents.slice(0, 4), // Show first 4 talents as results
-        timestamp: new Date(),
-      };
+    // Simulate AI response with search results
+    setTimeout(async () => {
+      try {
+        // Search talents based on input
+        const response = await getTalents({ search: input.trim() });
+        
+        const aiResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: `I've found ${response.talents.length} talents that match your requirements. Here are the top candidates for your project:`,
+          talents: response.talents,
+          timestamp: new Date(),
+        };
 
-      setMessages((prev) => [...prev, aiResponse]);
-      setIsLoading(false);
+        setMessages((prev) => [...prev, aiResponse]);
+      } catch (error) {
+        console.error('Search error:', error);
+        const errorResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: "I'm having trouble searching for talents right now. Please try again.",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorResponse]);
+      } finally {
+        setIsLoading(false);
+      }
     }, 1500);
   };
 
@@ -175,7 +159,7 @@ export default function TalentPage() {
         {/* Available Talents */}
         <div className="flex-1 transition-all duration-300 ease-out">
           <AvailableTalents
-            talents={hasUserMessage ? latestTalents : mockTalents}
+            talents={hasUserMessage ? latestTalents : allTalents}
             isLoading={isLoading}
             hasUserMessage={hasUserMessage}
             yourTeam={yourTeam}
