@@ -4,6 +4,7 @@ import { YourTeamSidePanel } from "../components/YourTeamSidePanel";
 import { ChatPanel } from "../components/ChatPanel";
 import { AvailableTalents } from "../components/AvailableTalents";
 import { getTalents } from "@/shared/services/talentService";
+import { sendTalentChat } from "@/shared/services/chatService";
 
 interface Talent {
   id: string;
@@ -34,7 +35,8 @@ export default function TalentPage() {
     },
   ]);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingTalents, setIsFetchingTalents] = useState(true);
+  const [isResponding, setIsResponding] = useState(false);
   const [showAddTalentForm, setShowAddTalentForm] = useState(false);
   const [showYourTeam, setShowYourTeam] = useState(false);
   const { team: yourTeam, addToTeam, removeFromTeam } = useTeamStorage();
@@ -43,7 +45,7 @@ export default function TalentPage() {
   useEffect(() => {
     const fetchTalents = async () => {
       try {
-        setIsLoading(true);
+        setIsFetchingTalents(true);
         const response = await getTalents();
         setAllTalents(response.talents);
       } catch (error) {
@@ -51,7 +53,7 @@ export default function TalentPage() {
         // Fallback to empty array if API fails
         setAllTalents([]);
       } finally {
-        setIsLoading(false);
+        setIsFetchingTalents(false);
       }
     };
 
@@ -66,7 +68,7 @@ export default function TalentPage() {
   }, [yourTeam.length, showYourTeam]);
 
   const handleSendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isResponding) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -77,36 +79,37 @@ export default function TalentPage() {
 
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
-    setIsLoading(true);
+    setIsResponding(true);
 
-    // Simulate AI response with search results
-    setTimeout(async () => {
-      try {
-        // Search talents based on input
-        const response = await getTalents({ search: input.trim() });
-        
-        const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: `I've found ${response.talents.length} talents that match your requirements. Here are the top candidates for your project:`,
-          talents: response.talents,
-          timestamp: new Date(),
-        };
+    try {
+      const payloadMessages = [...messages, userMessage].map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
 
-        setMessages((prev) => [...prev, aiResponse]);
-      } catch (error) {
-        console.error('Search error:', error);
-        const errorResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: "I'm having trouble searching for talents right now. Please try again.",
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, errorResponse]);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 1500);
+      const response = await sendTalentChat(payloadMessages);
+
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: response.content,
+        talents: response.talents || [],
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, aiResponse]);
+    } catch (error) {
+      console.error('AI chat error:', error);
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "I'm having trouble searching for talents right now. Please try again.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorResponse]);
+    } finally {
+      setIsResponding(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -147,7 +150,7 @@ export default function TalentPage() {
           <ChatPanel
             messages={messages}
             input={input}
-            isLoading={isLoading}
+            isLoading={isResponding}
             onInputChange={setInput}
             onSendMessage={handleSendMessage}
             onKeyPress={handleKeyPress}
@@ -160,7 +163,7 @@ export default function TalentPage() {
         <div className="flex-1 transition-all duration-300 ease-out">
           <AvailableTalents
             talents={hasUserMessage ? latestTalents : allTalents}
-            isLoading={isLoading}
+            isLoading={!hasUserMessage ? isFetchingTalents : false}
             hasUserMessage={hasUserMessage}
             yourTeam={yourTeam}
             onAddToTeam={handleAddToTeam}

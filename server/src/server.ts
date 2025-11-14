@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.routes.js';
 import talentRoutes from './routes/talent.routes.js';
 import socialRoutes from './routes/social.routes.js';
 import chatRoutes from './routes/chat.routes.js';
+import aiTalentSearchRoutes from './routes/aiTalentSearch.routes.js';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/talent', talentRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/ai', aiTalentSearchRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
