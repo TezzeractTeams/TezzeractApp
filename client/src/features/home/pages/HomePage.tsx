@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { SignInButton, SignUpButton, useUser } from "@clerk/clerk-react";
 import { Button } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/ui/Input";
 import { ArrowRight, Plus, Settings2, Loader2 } from "lucide-react";
@@ -27,6 +28,7 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const { team: yourTeam } = useTeamStorage();
   const navigate = useNavigate();
+  const { isSignedIn } = useUser();
   const [messages] = useState<Message[]>([
     {
       id: "1",
@@ -76,57 +78,76 @@ export default function HomePage() {
         <br /> form Talent & Start Growing!
       </h1>
 
-      <div className="w-2/5 p-4 pb-4 rounded-[30px] border border-white/30 bg-white/20 shadow-md self-center backdrop-blur-sm">
-        <div className="w-full">
-          <div className="flex flex-col gap-2">
-            <div className="relative w-full">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Start searching your dream team...."
-                className="bg-transparent font-mono text-white placeholder-white border-none focus:border-none focus:ring-0 !focus:outline-none disabled:border-none disabled:ring-0 disabled:outline-none pr-10"
-                disabled={isLoading}
-              />
-              {isLoading && (
-                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-white" />
-              )}
-            </div>
-            
-            <div className="flex flex-row p-2 rounded-lg gap-2">
-              <Button
-                disabled={isLoading}
-                variant="outline"
-                className="rounded-xl w-10 h-10 p-0 text-white border-white bg-transparent hover:bg-white/10"
-              >
-                <Plus className="w-6 h-6 text-white" />
-              </Button>
+      {/* Show Sign In/Sign Up buttons if not signed in */}
+      {!isSignedIn && (
+        <div className="flex gap-4 justify-center mb-8">
+          <SignInButton mode="modal">
+            <button className="px-8 py-3 bg-gradient-to-r from-blue-800 to-blue-400 text-white rounded-xl hover:opacity-90 transition-all font-light">
+              Sign In
+            </button>
+          </SignInButton>
+          <SignUpButton mode="modal">
+            <button className="px-8 py-3 border border-white text-white rounded-xl hover:bg-white hover:text-black transition-all font-light">
+              Sign Up
+            </button>
+          </SignUpButton>
+        </div>
+      )}
 
-              <Button
-                disabled={!input.trim() || isLoading}
-                variant="outline"
-                className="rounded-xl w-10 h-10 p-0 text-white border-white bg-transparent hover:bg-white/10"
-              >
-                <Settings2 className="w-6 h-6 text-white" />
-              </Button>
-
-              <Button
-                onClick={handleSendMessage}
-                disabled={!input.trim() || isLoading}
-                className="rounded-xl w-10 h-10 p-0 text-white ml-auto border border-white"
-                style={{
-                  background: "linear-gradient(45deg, #272727 10%, #515151 100%)",
-                }}
-              >
-                <ArrowRight
-                  className="w-6 h-6 text-white"
-                  style={{ filter: "drop-shadow(0 0 4px white)" }}
+      {/* Show search input only if signed in */}
+      {isSignedIn && (
+        <div className="w-2/5 p-4 pb-4 rounded-[30px] border border-white/30 bg-white/20 shadow-md self-center backdrop-blur-sm">
+          <div className="w-full">
+            <div className="flex flex-col gap-2">
+              <div className="relative w-full">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Start searching your dream team...."
+                  className="bg-transparent font-mono text-white placeholder-white border-none focus:border-none focus:ring-0 !focus:outline-none disabled:border-none disabled:ring-0 disabled:outline-none pr-10"
+                  disabled={isLoading}
                 />
-              </Button>
+                {isLoading && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-white" />
+                )}
+              </div>
+              
+              <div className="flex flex-row p-2 rounded-lg gap-2">
+                <Button
+                  disabled={isLoading}
+                  variant="outline"
+                  className="rounded-xl w-10 h-10 p-0 text-white border-white bg-transparent hover:bg-white/10"
+                >
+                  <Plus className="w-6 h-6 text-white" />
+                </Button>
+
+                <Button
+                  disabled={!input.trim() || isLoading}
+                  variant="outline"
+                  className="rounded-xl w-10 h-10 p-0 text-white border-white bg-transparent hover:bg-white/10"
+                >
+                  <Settings2 className="w-6 h-6 text-white" />
+                </Button>
+
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!input.trim() || isLoading}
+                  className="rounded-xl w-10 h-10 p-0 text-white ml-auto border border-white"
+                  style={{
+                    background: "linear-gradient(45deg, #272727 10%, #515151 100%)",
+                  }}
+                >
+                  <ArrowRight
+                    className="w-6 h-6 text-white"
+                    style={{ filter: "drop-shadow(0 0 4px white)" }}
+                  />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

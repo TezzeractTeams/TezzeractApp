@@ -10,6 +10,7 @@
     "start": "node dist/server.js"
   },
   "dependencies": {
+    "@clerk/clerk-sdk-node": "^5.0.0",
     "@supabase/supabase-js": "^2.39.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",

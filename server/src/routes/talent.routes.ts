@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireAuth } from '../middleware/clerk.middleware.js';
 import { 
   getTalents,
   getTalentById,
@@ -11,12 +12,14 @@ import {
 
 const router = Router();
 
-// Public routes (no authentication required for now)
+// Public/optional auth routes (read operations)
 router.get('/talents', getTalents);
 router.get('/talents/:id', getTalentById);
-router.post('/talents', createTalent);
-router.put('/talents/:id', updateTalent);
-router.delete('/talents/:id', deleteTalent);
+
+// Protected routes (require authentication)
+router.post('/talents', requireAuth, createTalent);
+router.put('/talents/:id', requireAuth, updateTalent);
+router.delete('/talents/:id', requireAuth, deleteTalent);
 
 // Legacy routes for backward compatibility
 router.get('/candidates', getCandidates);

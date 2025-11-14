@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+import { api } from './api';
 
 export interface Talent {
   id: string;
@@ -26,10 +24,10 @@ export interface SearchParams {
   maxExperience?: number;
 }
 
-// Get all talents with optional filters
+// Get all talents with optional filters (public endpoint)
 export const getTalents = async (params?: SearchParams): Promise<TalentsResponse> => {
   try {
-    const response = await axios.get(`${API_URL}/talent/talents`, { params });
+    const response = await api.get('/talent/talents', { params });
     return response.data;
   } catch (error) {
     console.error('Error fetching talents:', error);
@@ -37,10 +35,10 @@ export const getTalents = async (params?: SearchParams): Promise<TalentsResponse
   }
 };
 
-// Get a single talent by ID
+// Get a single talent by ID (public endpoint)
 export const getTalentById = async (id: string): Promise<Talent> => {
   try {
-    const response = await axios.get(`${API_URL}/talent/talents/${id}`);
+    const response = await api.get(`/talent/talents/${id}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching talent:', error);
@@ -48,10 +46,11 @@ export const getTalentById = async (id: string): Promise<Talent> => {
   }
 };
 
-// Create a new talent
-export const createTalent = async (talent: Omit<Talent, 'id' | 'created_at' | 'updated_at'>): Promise<Talent> => {
+// Create a new talent (requires auth - token will be added in component via useAuth)
+export const createTalent = async (talent: Omit<Talent, 'id' | 'created_at' | 'updated_at'>, token?: string): Promise<Talent> => {
   try {
-    const response = await axios.post(`${API_URL}/talent/talents`, talent);
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const response = await api.post('/talent/talents', talent, { headers });
     return response.data;
   } catch (error) {
     console.error('Error creating talent:', error);
@@ -59,10 +58,11 @@ export const createTalent = async (talent: Omit<Talent, 'id' | 'created_at' | 'u
   }
 };
 
-// Update a talent
-export const updateTalent = async (id: string, updates: Partial<Talent>): Promise<Talent> => {
+// Update a talent (requires auth)
+export const updateTalent = async (id: string, updates: Partial<Talent>, token?: string): Promise<Talent> => {
   try {
-    const response = await axios.put(`${API_URL}/talent/talents/${id}`, updates);
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const response = await api.put(`/talent/talents/${id}`, updates, { headers });
     return response.data;
   } catch (error) {
     console.error('Error updating talent:', error);
@@ -70,10 +70,11 @@ export const updateTalent = async (id: string, updates: Partial<Talent>): Promis
   }
 };
 
-// Delete a talent
-export const deleteTalent = async (id: string): Promise<void> => {
+// Delete a talent (requires auth)
+export const deleteTalent = async (id: string, token?: string): Promise<void> => {
   try {
-    await axios.delete(`${API_URL}/talent/talents/${id}`);
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    await api.delete(`/talent/talents/${id}`, { headers });
   } catch (error) {
     console.error('Error deleting talent:', error);
     throw error;

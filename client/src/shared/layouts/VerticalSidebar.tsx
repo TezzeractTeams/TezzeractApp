@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useClerk, useUser } from '@clerk/clerk-react';
 import { Users, BarChart3, MessageSquare, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 
@@ -10,10 +11,12 @@ const navItems = [
 ];
 
 export default function VerticalSidebar() {
-  const handleLogout = () => {
-    // TODO: Implement logout logic
-    localStorage.clear();
-    window.location.href = '/login';
+  const { signOut } = useClerk();
+  const { user } = useUser();
+
+  const handleLogout = async () => {
+    await signOut();
+    window.location.href = '/';
   };
 
   return (
@@ -59,18 +62,41 @@ export default function VerticalSidebar() {
         ))}
       </nav>
 
-      {/* Logout Button */}
-      <button
-        onClick={handleLogout}
-        className="w-12 h-12 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-600 hover:text-white transition-all duration-200 group relative"
-      >
-        <LogOut className="w-6 h-6" />
+      {/* User Profile & Logout */}
+      <div className="flex flex-col items-center space-y-2">
+        {/* User Avatar */}
+        {user && (
+          <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-gray-800 text-white text-sm font-medium relative group">
+            {user.imageUrl ? (
+              <img 
+                src={user.imageUrl} 
+                alt={user.fullName || 'User'} 
+                className="w-full h-full rounded-lg object-cover"
+              />
+            ) : (
+              <span>{user.firstName?.charAt(0) || user.emailAddresses[0]?.emailAddress.charAt(0).toUpperCase()}</span>
+            )}
+            
+            {/* Tooltip */}
+            <div className="absolute left-16 ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+              {user.fullName || user.emailAddresses[0]?.emailAddress}
+            </div>
+          </div>
+        )}
         
-        {/* Tooltip */}
-        <div className="absolute left-16 ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-          Logout
-        </div>
-      </button>
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          className="w-12 h-12 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-600 hover:text-white transition-all duration-200 group relative"
+        >
+          <LogOut className="w-6 h-6" />
+          
+          {/* Tooltip */}
+          <div className="absolute left-16 ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+            Logout
+          </div>
+        </button>
+      </div>
     </aside>
   );
 }

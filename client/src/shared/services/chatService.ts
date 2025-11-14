@@ -1,7 +1,6 @@
-import axios from 'axios';
+import { useAuth } from '@clerk/clerk-react';
+import { createAuthenticatedAxios } from '../lib/api';
 import type { Talent } from './talentService';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 export interface ChatMessagePayload {
   role: 'user' | 'assistant';
@@ -14,16 +13,26 @@ export interface ChatAIResponse {
   skills?: string[];
 }
 
-export const sendTalentChat = async (
-  messages: ChatMessagePayload[]
-): Promise<ChatAIResponse> => {
-  try {
-    const response = await axios.post(`${API_URL}/ai/chat`, { messages });
-    return response.data;
-  } catch (error) {
-    console.error('Error sending chat message:', error);
-    throw error;
-  }
+/**
+ * Hook to use chat service with authentication
+ */
+export const useChatService = () => {
+  const { getToken } = useAuth();
+  const api = createAuthenticatedAxios(getToken);
+
+  const sendTalentChat = async (
+    messages: ChatMessagePayload[]
+  ): Promise<ChatAIResponse> => {
+    try {
+      const response = await api.post('/ai/chat', { messages });
+      return response.data;
+    } catch (error) {
+      console.error('Error sending chat message:', error);
+      throw error;
+    }
+  };
+
+  return { sendTalentChat };
 };
 
 

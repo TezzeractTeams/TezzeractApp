@@ -14,27 +14,29 @@ const openaiClient = OPENAI_API_KEY
   : null;
 
 const skillExtractionPrompt = `
-You are a talent recruiter AI. Your goal is to help users find the perfect team members. Based on the *entire conversation history provided*, identify required skills/technologies from the latest user request or overall project description. When you respond, be helpful and conversational.
+You are a talent recruiter AI. Your goal is to help users find the perfect team members. Based on the *entire conversation history provided*, identify required skills/technologies from the latest user request or overall project description. 
+
+IMPORTANT: Your response should be brief and conversational. DO NOT list talents, DO NOT mention how many talents were found, and DO NOT include specific talent names or details in your response. The talents will be displayed separately on the UI.
 
 When extracting skills, respond with a brief natural language response first, followed by a JSON array of skills.
 
 Format your response as:
 
-RESPONSE: [brief response here]
+RESPONSE: [brief conversational response - DO NOT mention specific talents or counts]
 
 SKILLS: ["skill1", "skill2", "skill3"]
 
 Example:
 User: "I need help building a mobile app"
-RESPONSE: For a mobile app, you'll need mobile developers and UI/UX designers.
+RESPONSE: For a mobile app, you'll need mobile developers and UI/UX designers. I'll find the right experts for you.
 SKILLS: ["Mobile Development", "UI/UX Design", "iOS Development", "Android Development", "React Native", "Flutter"]
 
 Example:
-User: "web ui ux"
-RESPONSE: Great! For web UI/UX, you'll need designers with web design expertise.
-SKILLS: ["UI/UX Design", "Web Design", "Figma", "Adobe XD", "HTML", "CSS", "JavaScript", "Responsive Design"]
+User: "software development team"
+RESPONSE: For software development, you'll want a team with expertise in programming languages, frameworks, and modern development practices.
+SKILLS: ["Software Development", "Java", "Python", "JavaScript", "React", "Node.js", "DevOps", "Agile"]
 
-Always include the SKILLS array even if you're not 100% certain. Make educated guesses based on the context.
+Always include the SKILLS array even if you're not 100% certain. Make educated guesses based on the context. Keep responses short and friendly.
 `;
 
 interface ChatMessage {
@@ -46,16 +48,24 @@ const parseAiResponse = (content: string) => {
   const responseMatch = content.match(/RESPONSE:\s*(.*?)(?=SKILLS:|$)/s);
   const skillsMatch = content.match(/SKILLS:\s*(\[.*?\])/s);
 
-  const naturalResponse = responseMatch ? responseMatch[1].trim() : content;
+  let naturalResponse = responseMatch ? responseMatch[1].trim() : content;
   let extractedSkills: string[] = [];
 
   if (skillsMatch) {
     try {
       extractedSkills = JSON.parse(skillsMatch[1]);
+      // Remove the SKILLS line from the natural response if it somehow got included
+      naturalResponse = naturalResponse.replace(/SKILLS:\s*\[.*?\]/s, '').trim();
     } catch (error) {
       console.error('Error parsing skills from AI response:', error);
     }
   }
+
+  // Additional cleanup: remove any remaining "SKILLS:" mentions
+  naturalResponse = naturalResponse
+    .replace(/SKILLS:\s*\[[\s\S]*?\]/g, '')
+    .replace(/RESPONSE:\s*/g, '')
+    .trim();
 
   return { naturalResponse, extractedSkills };
 };

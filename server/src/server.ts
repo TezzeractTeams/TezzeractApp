@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { optionalAuth } from './middleware/clerk.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import talentRoutes from './routes/talent.routes.js';
 import socialRoutes from './routes/social.routes.js';
@@ -25,6 +26,9 @@ app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
   next();
 });
+
+// Optional auth middleware (checks for auth but doesn't require it)
+app.use(optionalAuth);
 
 // Routes
 app.use('/api/auth', authRoutes);
