@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
+import { ProtectedRoute } from './shared/components/ProtectedRoute';
 import PlatformLayout from './shared/layouts/PlatformLayout';
 import HomePage from './features/home/pages/HomePage';
 import TalentPage from './features/talent/pages/TalentPage';
@@ -26,14 +26,9 @@ function App() {
         
         {/* Protected Platform Routes - Auth Required */}
         <Route element={
-          <>
-            <SignedIn>
-              <PlatformLayout />
-            </SignedIn>
-            <SignedOut>
-              <RedirectToSignIn />
-            </SignedOut>
-          </>
+          <ProtectedRoute>
+            <PlatformLayout />
+          </ProtectedRoute>
         }>
           <Route path="/talent" element={<TalentPage />} />
           <Route path="/chat" element={<ChatPage />} />

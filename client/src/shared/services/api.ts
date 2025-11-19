@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import { supabase } from '../lib/supabase';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -43,12 +44,21 @@ export const createAuthenticatedApi = (getToken: () => Promise<string | null>): 
     (error) => {
       if (error.response?.status === 401) {
         console.error('Unauthorized - redirecting to sign in');
-        // You could redirect to sign-in here if needed
+        // Redirect to sign-in
+        window.location.href = '/';
       }
       return Promise.reject(error);
     }
   );
 
   return authenticatedApi;
+};
+
+/**
+ * Get Supabase access token for API calls
+ */
+export const getSupabaseToken = async (): Promise<string | null> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
 };
 

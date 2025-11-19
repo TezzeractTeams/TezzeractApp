@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/clerk.middleware.js';
+import { requireAuth } from '../middleware/supabase.middleware.js';
 import { 
   getTalents,
   getTalentById,

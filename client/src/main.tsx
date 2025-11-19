@@ -1,22 +1,23 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { ClerkProvider } from '@clerk/clerk-react'
+import { AuthProvider } from './shared/contexts/AuthContext'
 import './index.css'
 import App from './App.tsx'
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!PUBLISHABLE_KEY) {
-  console.error('⚠️ Missing VITE_CLERK_PUBLISHABLE_KEY in .env file')
-  console.error('Please add: VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here')
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error('⚠️ Missing Supabase environment variables in .env file')
+  console.error('Please add: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY')
 }
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {PUBLISHABLE_KEY ? (
-      <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+    {SUPABASE_URL && SUPABASE_ANON_KEY ? (
+      <AuthProvider>
         <App />
-      </ClerkProvider>
+      </AuthProvider>
     ) : (
       <div style={{ 
         display: 'flex', 
@@ -31,7 +32,7 @@ createRoot(document.getElementById('root')!).render(
         textAlign: 'center'
       }}>
         <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>⚠️ Configuration Error</h1>
-        <p style={{ fontSize: '1.2rem', marginBottom: '2rem' }}>Missing Clerk Publishable Key</p>
+        <p style={{ fontSize: '1.2rem', marginBottom: '2rem' }}>Missing Supabase Configuration</p>
         <div style={{ 
           backgroundColor: '#1a1a1a', 
           padding: '20px', 
@@ -46,10 +47,10 @@ createRoot(document.getElementById('root')!).render(
             borderRadius: '4px',
             overflow: 'auto'
           }}>
-            VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+            VITE_SUPABASE_URL=your_supabase_url{'\n'}VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
           </pre>
           <p style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: 0.8 }}>
-            Get your key from: <a href="https://dashboard.clerk.com" target="_blank" style={{ color: '#009BE9' }}>Clerk Dashboard</a>
+            Get your keys from: <a href="https://app.supabase.com" target="_blank" style={{ color: '#009BE9' }}>Supabase Dashboard</a>
           </p>
         </div>
       </div>

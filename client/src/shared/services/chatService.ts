@@ -1,5 +1,4 @@
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthenticatedAxios } from '../lib/api';
+import { createAuthenticatedAxios, getSupabaseToken } from '../lib/api';
 import type { Talent } from './talentService';
 
 export interface ChatMessagePayload {
@@ -17,8 +16,7 @@ export interface ChatAIResponse {
  * Hook to use chat service with authentication
  */
 export const useChatService = () => {
-  const { getToken } = useAuth();
-  const api = createAuthenticatedAxios(getToken);
+  const api = createAuthenticatedAxios(getSupabaseToken);
 
   const sendTalentChat = async (
     messages: ChatMessagePayload[]

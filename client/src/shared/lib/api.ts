@@ -1,10 +1,11 @@
 import axios, { AxiosInstance } from 'axios';
+import { supabase } from './supabase';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 /**
  * Create an axios instance with authentication
- * @param getToken Function to get the auth token from Clerk
+ * @param getToken Function to get the auth token from Supabase
  * @returns Configured axios instance
  */
 export const createAuthenticatedAxios = (
@@ -45,5 +46,13 @@ export const createAuthenticatedAxios = (
   );
 
   return instance;
+};
+
+/**
+ * Get Supabase access token
+ */
+export const getSupabaseToken = async (): Promise<string | null> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
 };
 

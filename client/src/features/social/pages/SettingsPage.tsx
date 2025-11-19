@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
-import { Twitter, Facebook, Instagram, Youtube, Linkedin, BarChart3, Check, X } from 'lucide-react';
+import { Input } from '@/shared/components/ui/Input';
+import { Twitter, Facebook, Instagram, Youtube, Linkedin, BarChart3, Check, X, User, Building2, Plug, Brain, Loader2 } from 'lucide-react';
+import { VerticalTabs } from '../components/VerticalTabs';
 import { useSocialService } from '@/shared/services/socialService';
 import type { Platform } from '@/shared/services/socialService';
+import { useAuth } from '@/shared/contexts/AuthContext';
+import { supabase } from '@/shared/lib/supabase';
+import { getOrganization, createOrganization, updateOrganization } from '@/shared/services/organizationService';
 
 const platformIcons: Record<string, any> = {
   twitter: Twitter,
@@ -23,71 +28,598 @@ const platformColors: Record<string, { bg: string; text: string }> = {
   google_analytics: { bg: 'bg-orange-600', text: 'text-white' },
 };
 
-export default function SettingsPage() {
-  const [platforms, setPlatforms] = useState<Platform[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { getConnectedPlatforms, connectPlatform, disconnectPlatform } = useSocialService();
+const settingsTabs = [
+  { id: 'user', label: 'User', icon: <User className="w-5 h-5" /> },
+  { id: 'organization', label: 'Organization', icon: <Building2 className="w-5 h-5" /> },
+  { id: 'integration', label: 'Integration', icon: <Plug className="w-5 h-5" /> },
+  { id: 'ai-settings', label: 'AI Settings', icon: <Brain className="w-5 h-5" /> },
+];
 
+// User Tab Content
+function UserTabContent() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+  
+  // Profile form state
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
+  
+  // Password form state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  // Load user data on mount
   useEffect(() => {
-    const fetchPlatforms = async () => {
-      try {
-        const data = await getConnectedPlatforms();
-        setPlatforms(data.platforms);
-      } catch (error) {
-        console.error('Failed to fetch platforms:', error);
-      } finally {
+    if (user) {
+      setFullName(user.user_metadata?.full_name || '');
+      setEmail(user.email || '');
+      setPhone(user.user_metadata?.phone || '');
+      setProfileLoading(false);
+    } else {
+      setProfileLoading(false);
+    }
+  }, [user]);
+
+  // Handle profile update
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setProfileError(null);
+    setProfileSuccess(null);
+
+    try {
+      // Update user metadata in Supabase Auth
+      const { data: updatedUser, error } = await supabase.auth.updateUser({
+        data: {
+          full_name: fullName,
+          phone: phone,
+        },
+      });
+
+      if (error) {
+        console.error('Error updating user:', error);
+        setProfileError(error.message);
         setLoading(false);
+        return;
       }
-    };
 
-    fetchPlatforms();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      // Refresh the session to get updated user data
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+      
+      if (sessionError) {
+        console.error('Error refreshing session:', sessionError);
+        // Don't fail the update if session refresh fails, the data is still updated
+      }
 
-  const handleConnect = async (platformId: string) => {
-    try {
-      const response = await connectPlatform(platformId);
-      console.log('Platform connection initiated:', response);
-      // TODO: Open OAuth window with response.authUrl
-      alert('OAuth integration coming soon! This will open the platform\'s authorization page.');
-    } catch (error) {
-      console.error('Failed to connect platform:', error);
+      // Update local state with the new user data
+      if (updatedUser?.user) {
+        const newFullName = updatedUser.user.user_metadata?.full_name || fullName;
+        const newPhone = updatedUser.user.user_metadata?.phone || phone;
+        setFullName(newFullName);
+        setPhone(newPhone);
+        
+        console.log('Profile updated successfully:', {
+          full_name: newFullName,
+          phone: newPhone,
+          user_id: updatedUser.user.id
+        });
+      }
+      
+      setProfileSuccess('Profile updated successfully!');
+      // Clear success message after 3 seconds
+      setTimeout(() => setProfileSuccess(null), 3000);
+    } catch (error: any) {
+      console.error('Unexpected error updating profile:', error);
+      setProfileError(error.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDisconnect = async (platformId: string) => {
+  // Handle password update
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordLoading(true);
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError('All password fields are required');
+      setPasswordLoading(false);
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match');
+      setPasswordLoading(false);
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters long');
+      setPasswordLoading(false);
+      return;
+    }
+
     try {
-      await disconnectPlatform(platformId);
-      // Refresh platforms list
-      const data = await getConnectedPlatforms();
-      setPlatforms(data.platforms);
-    } catch (error) {
-      console.error('Failed to disconnect platform:', error);
+      // Verify current password by attempting to sign in
+      if (user?.email) {
+        const { error: verifyError } = await supabase.auth.signInWithPassword({
+          email: user.email,
+          password: currentPassword,
+        });
+
+        if (verifyError) {
+          setPasswordError('Current password is incorrect');
+          setPasswordLoading(false);
+          return;
+        }
+      }
+
+      // Update password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        setPasswordError(error.message);
+      } else {
+        setPasswordSuccess('Password updated successfully!');
+        // Clear form
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        // Clear success message after 3 seconds
+        setTimeout(() => setPasswordSuccess(null), 3000);
+      }
+    } catch (error: any) {
+      setPasswordError(error.message || 'Failed to update password');
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
-  if (loading) {
+  if (profileLoading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+      <div className="flex items-center justify-center h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading settings...</p>
+          <Loader2 className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-[400px]">
+        <div className="text-center">
+          <p className="text-gray-600">Please sign in to view your profile settings.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-8 space-y-6 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gradient">Settings</h1>
-        <p className="text-gray-600 mt-1">
-          Manage your social media integrations and preferences
-        </p>
-      </div>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile Information</CardTitle>
+          <CardDescription>
+            Manage your personal account settings
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleProfileUpdate} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Full Name
+              </label>
+              <Input
+                type="text"
+                placeholder="Enter your full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                disabled
+                className="bg-gray-100 cursor-not-allowed"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Email cannot be changed. Contact support if you need to update your email.
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number
+              </label>
+              <Input
+                type="tel"
+                placeholder="Enter your phone number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+            {profileError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{profileError}</p>
+              </div>
+            )}
+            {profileSuccess && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-600">{profileSuccess}</p>
+              </div>
+            )}
+            <Button type="submit" variant="gradient" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
-      {/* Platform Connections */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Password & Security</CardTitle>
+          <CardDescription>
+            Update your password and security settings
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handlePasswordUpdate} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Current Password
+              </label>
+              <Input
+                type="password"
+                placeholder="Enter current password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                New Password
+              </label>
+              <Input
+                type="password"
+                placeholder="Enter new password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Password must be at least 6 characters long
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Confirm New Password
+              </label>
+              <Input
+                type="password"
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+            {passwordError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{passwordError}</p>
+              </div>
+            )}
+            {passwordSuccess && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-600">{passwordSuccess}</p>
+              </div>
+            )}
+            <Button type="submit" variant="gradient" disabled={passwordLoading}>
+              {passwordLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update Password'
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Organization Tab Content
+function OrganizationTabContent() {
+  const { user } = useAuth();
+  const [organization, setOrganization] = useState<any>(null);
+  const [orgLoading, setOrgLoading] = useState(true);
+  const [showOrgForm, setShowOrgForm] = useState(false);
+  const [orgFormData, setOrgFormData] = useState({
+    name: "",
+    industry: "",
+    website: "",
+    description: "",
+  });
+  const [orgSaving, setOrgSaving] = useState(false);
+  const [orgError, setOrgError] = useState<string | null>(null);
+  const [orgSuccess, setOrgSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setOrgLoading(false);
+      return;
+    }
+
+    const fetchOrganization = async () => {
+      try {
+        setOrgLoading(true);
+        const response = await getOrganization();
+        setOrganization(response.organization);
+        if (response.organization) {
+          setOrgFormData({
+            name: response.organization.name || "",
+            industry: response.organization.industry || "",
+            website: response.organization.website || "",
+            description: response.organization.description || "",
+          });
+        }
+      } catch (error: any) {
+        console.error("Error fetching organization:", error);
+        // Don't show error for missing table
+        if (!error.response?.data?.error?.includes("does not exist") &&
+            !error.response?.data?.error?.includes("user_id")) {
+          setOrgError("Failed to load organization");
+        }
+      } finally {
+        setOrgLoading(false);
+      }
+    };
+
+    fetchOrganization();
+  }, [user]);
+
+  const handleOrgSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOrgSaving(true);
+    setOrgError(null);
+    setOrgSuccess(null);
+
+    try {
+      if (organization) {
+        // Update existing organization
+        const response = await updateOrganization(orgFormData);
+        setOrganization(response.organization);
+        setOrgSuccess("Organization updated successfully!");
+      } else {
+        // Create new organization
+        const response = await createOrganization(orgFormData);
+        setOrganization(response.organization);
+        setOrgSuccess("Organization created successfully!");
+        setShowOrgForm(false);
+      }
+      setTimeout(() => setOrgSuccess(null), 3000);
+    } catch (error: any) {
+      setOrgError(error.message || "Failed to save organization");
+    } finally {
+      setOrgSaving(false);
+    }
+  };
+
+  if (orgLoading) {
+    return (
+      <div className="flex items-center justify-center h-[400px]">
+        <div className="text-center">
+          <Loader2 className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading organization...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!organization && !showOrgForm) {
+    // No organization - show create button
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Organization Details</CardTitle>
+            <CardDescription>
+              Create your organization to get started
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-12">
+              <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No Organization Yet
+              </h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                Create an organization to manage your team, projects, and settings in one place.
+              </p>
+              <Button variant="gradient" onClick={() => setShowOrgForm(true)}>
+                Create Organization
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Organization Details</CardTitle>
+          <CardDescription>
+            {organization ? 'Manage your organization information' : 'Create your organization'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleOrgSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Organization Name *
+              </label>
+              <Input
+                placeholder="Enter organization name"
+                value={orgFormData.name}
+                onChange={(e) => setOrgFormData({ ...orgFormData, name: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Industry
+              </label>
+              <Input
+                placeholder="Enter industry"
+                value={orgFormData.industry}
+                onChange={(e) => setOrgFormData({ ...orgFormData, industry: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Website
+              </label>
+              <Input
+                type="url"
+                placeholder="https://example.com"
+                value={orgFormData.website}
+                onChange={(e) => setOrgFormData({ ...orgFormData, website: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <textarea
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                rows={4}
+                placeholder="Enter organization description"
+                value={orgFormData.description}
+                onChange={(e) => setOrgFormData({ ...orgFormData, description: e.target.value })}
+              />
+            </div>
+
+            {orgError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{orgError}</p>
+              </div>
+            )}
+            {orgSuccess && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-600">{orgSuccess}</p>
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <Button
+                type="submit"
+                variant="gradient"
+                disabled={orgSaving || !orgFormData.name.trim()}
+              >
+                {orgSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  organization ? 'Update Organization' : 'Create Organization'
+                )}
+              </Button>
+              {!organization && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowOrgForm(false)}
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {organization && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Team Members</CardTitle>
+            <CardDescription>
+              Manage team members and permissions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <p className="text-gray-600">Team management coming soon</p>
+              <p className="text-sm text-gray-500 mt-2">
+                Invite team members and manage their access levels
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// Integration Tab Content (Platform Connections)
+function IntegrationTabContent({
+  platforms,
+  loading,
+  onConnect,
+  onDisconnect,
+}: {
+  platforms: Platform[];
+  loading: boolean;
+  onConnect: (platformId: string) => void;
+  onDisconnect: (platformId: string) => void;
+}) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading platforms...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Connected Platforms</CardTitle>
@@ -139,7 +671,7 @@ export default function SettingsPage() {
                         variant="outline"
                         size="sm"
                         className="w-full"
-                        onClick={() => handleDisconnect(platform.id)}
+                        onClick={() => onDisconnect(platform.id)}
                       >
                         Disconnect
                       </Button>
@@ -157,7 +689,7 @@ export default function SettingsPage() {
                       variant="gradient"
                       size="sm"
                       className="w-full"
-                      onClick={() => handleConnect(platform.id)}
+                      onClick={() => onConnect(platform.id)}
                     >
                       Connect
                     </Button>
@@ -169,7 +701,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* API Configuration */}
       <Card>
         <CardHeader>
           <CardTitle>API Configuration</CardTitle>
@@ -198,3 +729,193 @@ export default function SettingsPage() {
   );
 }
 
+// AI Settings Tab Content
+function AISettingsTabContent() {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>AI Provider Configuration</CardTitle>
+          <CardDescription>
+            Configure your AI provider settings for content generation and insights
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              AI Provider
+            </label>
+            <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent">
+              <option value="openai">OpenAI (GPT-4)</option>
+              <option value="anthropic">Anthropic (Claude)</option>
+              <option value="google">Google (Gemini)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              API Key
+            </label>
+            <Input type="password" placeholder="Enter your API key" />
+            <p className="text-xs text-gray-500 mt-1">
+              Your API key is encrypted and stored securely
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Model Preference
+            </label>
+            <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent">
+              <option value="gpt-4">GPT-4 (Recommended)</option>
+              <option value="gpt-4-turbo">GPT-4 Turbo</option>
+              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            </select>
+          </div>
+          <Button variant="gradient">Save AI Settings</Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Content Generation Preferences</CardTitle>
+          <CardDescription>
+            Customize how AI generates content for your brand
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Content Tone
+            </label>
+            <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent">
+              <option value="professional">Professional</option>
+              <option value="casual">Casual</option>
+              <option value="friendly">Friendly</option>
+              <option value="formal">Formal</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Brand Voice
+            </label>
+            <textarea
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+              rows={3}
+              placeholder="Describe your brand voice and style..."
+            />
+          </div>
+          <div className="flex items-center space-x-2">
+            <input type="checkbox" id="include-hashtags" className="rounded" />
+            <label htmlFor="include-hashtags" className="text-sm text-gray-700">
+              Automatically include relevant hashtags
+            </label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <input type="checkbox" id="include-cta" className="rounded" />
+            <label htmlFor="include-cta" className="text-sm text-gray-700">
+              Include call-to-action in suggestions
+            </label>
+          </div>
+          <Button variant="gradient">Save Preferences</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useState('user');
+  const [platforms, setPlatforms] = useState<Platform[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { getConnectedPlatforms, connectPlatform, disconnectPlatform } = useSocialService();
+
+  useEffect(() => {
+    // Only fetch platforms when integration tab is active
+    if (activeTab !== 'integration') return;
+
+    const fetchPlatforms = async () => {
+      setLoading(true);
+      try {
+        const data = await getConnectedPlatforms();
+        setPlatforms(data.platforms);
+      } catch (error) {
+        console.error('Failed to fetch platforms:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlatforms();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  const handleConnect = async (platformId: string) => {
+    try {
+      const response = await connectPlatform(platformId);
+      console.log('Platform connection initiated:', response);
+      // TODO: Open OAuth window with response.authUrl
+      alert('OAuth integration coming soon! This will open the platform\'s authorization page.');
+    } catch (error) {
+      console.error('Failed to connect platform:', error);
+    }
+  };
+
+  const handleDisconnect = async (platformId: string) => {
+    try {
+      await disconnectPlatform(platformId);
+      // Refresh platforms list
+      const data = await getConnectedPlatforms();
+      setPlatforms(data.platforms);
+    } catch (error) {
+      console.error('Failed to disconnect platform:', error);
+    }
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'user':
+        return <UserTabContent />;
+      case 'organization':
+        return <OrganizationTabContent />;
+      case 'integration':
+        return (
+          <IntegrationTabContent
+            platforms={platforms}
+            loading={loading}
+            onConnect={handleConnect}
+            onDisconnect={handleDisconnect}
+          />
+        );
+      case 'ai-settings':
+        return <AISettingsTabContent />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="p-8 animate-fade-in">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gradient">Settings</h1>
+        <p className="text-gray-600 mt-1">
+          Manage your account, organization, and integrations
+        </p>
+      </div>
+
+      {/* Vertical Tabs Layout */}
+      <div className="flex gap-8">
+        {/* Vertical Tabs */}
+        <VerticalTabs
+          tabs={settingsTabs}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+
+        {/* Tab Content */}
+        <div className="flex-1 min-w-0">
+          {renderTabContent()}
+        </div>
+      </div>
+    </div>
+  );
+}

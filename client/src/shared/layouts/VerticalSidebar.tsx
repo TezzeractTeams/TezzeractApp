@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { useClerk, useUser } from '@clerk/clerk-react';
+import { useAuth } from '@/shared/contexts/AuthContext';
 import { Users, BarChart3, MessageSquare, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 
@@ -11,12 +11,10 @@ const navItems = [
 ];
 
 export default function VerticalSidebar() {
-  const { signOut } = useClerk();
-  const { user } = useUser();
+  const { user, signOut } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
-    window.location.href = '/';
   };
 
   return (
@@ -67,19 +65,19 @@ export default function VerticalSidebar() {
         {/* User Avatar */}
         {user && (
           <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-gray-800 text-white text-sm font-medium relative group">
-            {user.imageUrl ? (
+            {user.user_metadata?.avatar_url ? (
               <img 
-                src={user.imageUrl} 
-                alt={user.fullName || 'User'} 
+                src={user.user_metadata.avatar_url} 
+                alt={user.user_metadata?.full_name || user.email || 'User'} 
                 className="w-full h-full rounded-lg object-cover"
               />
             ) : (
-              <span>{user.firstName?.charAt(0) || user.emailAddresses[0]?.emailAddress.charAt(0).toUpperCase()}</span>
+              <span>{(user.user_metadata?.full_name || user.email || 'U').charAt(0).toUpperCase()}</span>
             )}
             
             {/* Tooltip */}
             <div className="absolute left-16 ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-              {user.fullName || user.emailAddresses[0]?.emailAddress}
+              {user.user_metadata?.full_name || user.email}
             </div>
           </div>
         )}
