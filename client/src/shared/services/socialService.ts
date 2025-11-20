@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import { createAuthenticatedAxios, getSupabaseToken } from '../lib/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -10,6 +11,11 @@ const createPublicAxios = (): AxiosInstance => {
       'Content-Type': 'application/json',
     },
   });
+};
+
+// Create authenticated axios instance for protected routes
+const createAuthAxios = (): AxiosInstance => {
+  return createAuthenticatedAxios(getSupabaseToken);
 };
 
 export interface DashboardMetrics {
@@ -56,14 +62,23 @@ export interface Platform {
   name: string;
   connected: boolean;
   lastSync: string | null;
+  propertyName?: string | null;
+}
+
+export interface GoogleAnalyticsProperty {
+  id: string;
+  name: string;
+  accountId: string;
 }
 
 export interface ScheduledPost {
   id: string;
   platform: string;
   content: string;
-  scheduledFor: Date;
+  scheduledFor: Date | string;
   status: 'scheduled' | 'published' | 'failed';
+  contentType?: string;
+  engagementScore?: number;
 }
 
 export interface ContentSuggestion {
@@ -72,19 +87,35 @@ export interface ContentSuggestion {
   content: string;
   type: string;
   engagement_score: number;
+  suggestedDate?: string; // ISO date string
+}
+
+export interface Objective {
+  id: string;
+  user_id: string;
+  objective_type: string;
+  description: string;
+  target_impressions: number;
+  target_reach: number;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 /**
- * Hook to use social media service (public routes - no auth required)
- * For public dashboard routes, we use a simple axios instance without authentication
+ * Hook to use social media service
+ * Uses authenticated API for platform management, public API for dashboard (if needed)
  */
 export const useSocialService = () => {
-  // Use public API (no auth required for dashboard)
-  const api = createPublicAxios();
+  // Use public API for dashboard (if it doesn't require auth)
+  const publicApi = createPublicAxios();
+  // Use authenticated API for platform management
+  const authApi = createAuthAxios();
 
   const getDashboardAnalytics = async (timeRange: string = '30d'): Promise<DashboardAnalytics> => {
     try {
-      const response = await api.get(`/social/dashboard/analytics?timeRange=${timeRange}`);
+      const response = await authApi.get(`/social/dashboard/analytics?timeRange=${timeRange}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching dashboard analytics:', error);
@@ -94,7 +125,7 @@ export const useSocialService = () => {
 
   const getAIInsights = async (timeRange: string = '30d'): Promise<AIInsights> => {
     try {
-      const response = await api.get(`/social/dashboard/insights?timeRange=${timeRange}`);
+      const response = await authApi.get(`/social/dashboard/insights?timeRange=${timeRange}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching AI insights:', error);
@@ -104,7 +135,7 @@ export const useSocialService = () => {
 
   const getConnectedPlatforms = async (): Promise<{ platforms: Platform[] }> => {
     try {
-      const response = await api.get('/social/platforms');
+      const response = await authApi.get('/social/platforms');
       return response.data;
     } catch (error) {
       console.error('Error fetching connected platforms:', error);
@@ -114,7 +145,7 @@ export const useSocialService = () => {
 
   const connectPlatform = async (platform: string): Promise<{ authUrl: string }> => {
     try {
-      const response = await api.post(`/social/platforms/${platform}/connect`);
+      const response = await authApi.post(`/social/platforms/${platform}/connect`);
       return response.data;
     } catch (error) {
       console.error('Error connecting platform:', error);
@@ -124,7 +155,7 @@ export const useSocialService = () => {
 
   const disconnectPlatform = async (platform: string): Promise<void> => {
     try {
-      await api.delete(`/social/platforms/${platform}/disconnect`);
+      await authApi.delete(`/social/platforms/${platform}/disconnect`);
     } catch (error) {
       console.error('Error disconnecting platform:', error);
       throw error;
@@ -137,7 +168,7 @@ export const useSocialService = () => {
       if (month) params.append('month', month.toString());
       if (year) params.append('year', year.toString());
       
-      const response = await api.get(`/social/content/calendar?${params.toString()}`);
+      const response = await authApi.get(`/social/content/calendar?${params.toString()}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching content calendar:', error);
@@ -148,13 +179,17 @@ export const useSocialService = () => {
   const schedulePost = async (
     platform: string,
     content: string,
-    scheduledFor: Date
+    scheduledFor: Date,
+    contentType?: string,
+    engagementScore?: number
   ): Promise<{ post: ScheduledPost }> => {
     try {
-      const response = await api.post('/social/content/schedule', {
+      const response = await authApi.post('/social/content/schedule', {
         platform,
         content,
-        scheduledFor,
+        scheduledFor: scheduledFor.toISOString(),
+        contentType,
+        engagementScore,
       });
       return response.data;
     } catch (error) {
@@ -163,12 +198,98 @@ export const useSocialService = () => {
     }
   };
 
-  const getContentSuggestions = async (): Promise<{ suggestions: ContentSuggestion[] }> => {
+  const updateScheduledPost = async (
+    id: string,
+    platform: string,
+    content: string,
+    scheduledFor: Date,
+    contentType?: string,
+    engagementScore?: number
+  ): Promise<{ post: ScheduledPost }> => {
     try {
-      const response = await api.get('/social/content/suggestions');
+      const response = await authApi.put(`/social/content/schedule/${id}`, {
+        platform,
+        content,
+        scheduledFor: scheduledFor.toISOString(),
+        contentType,
+        engagementScore,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating scheduled post:', error);
+      throw error;
+    }
+  };
+
+  const deleteScheduledPost = async (id: string): Promise<void> => {
+    try {
+      await authApi.delete(`/social/content/schedule/${id}`);
+    } catch (error) {
+      console.error('Error deleting scheduled post:', error);
+      throw error;
+    }
+  };
+
+  const getContentSuggestions = async (regenerate: boolean = false): Promise<{ suggestions: ContentSuggestion[] }> => {
+    try {
+      const params = regenerate ? '?regenerate=true' : '';
+      const response = await authApi.get(`/social/content/suggestions${params}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching content suggestions:', error);
+      throw error;
+    }
+  };
+
+  const getGoogleAnalyticsProperties = async (): Promise<{ properties: GoogleAnalyticsProperty[] }> => {
+    try {
+      const response = await authApi.get('/social/platforms/google_analytics/properties');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching Google Analytics properties:', error);
+      throw error;
+    }
+  };
+
+  const selectGoogleAnalyticsProperty = async (propertyId: string, propertyName: string): Promise<void> => {
+    try {
+      await authApi.post('/social/platforms/google_analytics/properties/select', {
+        propertyId,
+        propertyName,
+      });
+    } catch (error) {
+      console.error('Error selecting Google Analytics property:', error);
+      throw error;
+    }
+  };
+
+  const getObjectives = async (): Promise<{ objectives: Objective[] }> => {
+    try {
+      const response = await authApi.get('/social/objectives');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching objectives:', error);
+      throw error;
+    }
+  };
+
+  const createObjective = async (
+    objective: Omit<Objective, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+  ): Promise<{ objective: Objective }> => {
+    try {
+      const response = await authApi.post('/social/objectives', objective);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating objective:', error);
+      throw error;
+    }
+  };
+
+  const deleteObjective = async (id: string): Promise<void> => {
+    try {
+      await authApi.delete(`/social/objectives/${id}`);
+    } catch (error) {
+      console.error('Error deleting objective:', error);
       throw error;
     }
   };
@@ -181,7 +302,14 @@ export const useSocialService = () => {
     disconnectPlatform,
     getContentCalendar,
     schedulePost,
+    updateScheduledPost,
+    deleteScheduledPost,
     getContentSuggestions,
+    getGoogleAnalyticsProperties,
+    selectGoogleAnalyticsProperty,
+    getObjectives,
+    createObjective,
+    deleteObjective,
   };
 };
 
