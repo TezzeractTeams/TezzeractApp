@@ -1,12 +1,17 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+
+// Load environment variables BEFORE importing middleware that uses them
+dotenv.config();
+
+import { optionalAuth } from './middleware/supabase.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import talentRoutes from './routes/talent.routes.js';
 import socialRoutes from './routes/social.routes.js';
 import chatRoutes from './routes/chat.routes.js';
-
-dotenv.config();
+import aiTalentSearchRoutes from './routes/aiTalentSearch.routes.js';
+import organizationRoutes from './routes/organization.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -25,11 +30,16 @@ app.use((req, res, next) => {
   next();
 });
 
+// Optional auth middleware (checks for auth but doesn't require it)
+app.use(optionalAuth);
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/talent', talentRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/ai', aiTalentSearchRoutes);
+app.use('/api/organization', organizationRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -49,4 +59,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📡 API available at http://localhost:${PORT}/api`);
 });
+
 
