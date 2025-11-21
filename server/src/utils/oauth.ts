@@ -8,7 +8,7 @@ const PORT = process.env.PORT || '5001';
 const API_URL = process.env.API_URL || `http://localhost:${PORT}/api`;
 
 // Store OAuth states temporarily (in production, use Redis or database)
-const oauthStates = new Map<string, { userId: string; platform: string; expiresAt: number }>();
+const oauthStates = new Map<string, { userId: string; platform: string; expiresAt: number; codeVerifier?: string }>();
 
 // Clean up expired states every 10 minutes
 setInterval(() => {
@@ -20,24 +20,26 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
-export function generateOAuthState(userId: string, platform: string): string {
+export function generateOAuthState(userId: string, platform: string, codeVerifier?: string): string {
   const state = crypto.randomBytes(32).toString('hex');
   oauthStates.set(state, {
     userId,
     platform,
     expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+    codeVerifier,
   });
   return state;
 }
 
-export function validateOAuthState(state: string): { userId: string; platform: string } | null {
+export function validateOAuthState(state: string): { userId: string; platform: string; codeVerifier?: string } | null {
   const data = oauthStates.get(state);
   if (!data || data.expiresAt < Date.now()) {
     oauthStates.delete(state);
     return null;
   }
+  const result = { userId: data.userId, platform: data.platform, codeVerifier: data.codeVerifier };
   oauthStates.delete(state);
-  return { userId: data.userId, platform: data.platform };
+  return result;
 }
 
 // Google OAuth (for Google Analytics and YouTube)
@@ -96,7 +98,12 @@ export function getTwitterOAuthUrl(userId: string): string {
     throw new Error('TWITTER_CLIENT_ID is not configured');
   }
 
-  const state = generateOAuthState(userId, 'twitter');
+  // Generate code_verifier for PKCE (43-128 characters, URL-safe)
+  // For 'plain' method, code_challenge equals code_verifier
+  const codeVerifier = crypto.randomBytes(32).toString('base64url');
+  const codeChallenge = codeVerifier; // For 'plain' method, they're the same
+
+  const state = generateOAuthState(userId, 'twitter', codeVerifier);
   const redirectUri = `${API_URL}/social/oauth/twitter/callback`;
 
   const params = new URLSearchParams({
@@ -105,7 +112,7 @@ export function getTwitterOAuthUrl(userId: string): string {
     redirect_uri: redirectUri,
     scope: 'tweet.read tweet.write users.read offline.access',
     state,
-    code_challenge: crypto.randomBytes(32).toString('base64url'),
+    code_challenge: codeChallenge,
     code_challenge_method: 'plain',
   });
 

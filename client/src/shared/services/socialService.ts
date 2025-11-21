@@ -230,6 +230,16 @@ export const useSocialService = () => {
     }
   };
 
+  const postNow = async (id: string): Promise<{ post: ScheduledPost; message: string }> => {
+    try {
+      const response = await authApi.post(`/social/content/post/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error posting to platform:', error);
+      throw error;
+    }
+  };
+
   const getContentSuggestions = async (regenerate: boolean = false): Promise<{ suggestions: ContentSuggestion[] }> => {
     try {
       const params = regenerate ? '?regenerate=true' : '';
@@ -304,6 +314,7 @@ export const useSocialService = () => {
     schedulePost,
     updateScheduledPost,
     deleteScheduledPost,
+    postNow,
     getContentSuggestions,
     getGoogleAnalyticsProperties,
     selectGoogleAnalyticsProperty,
