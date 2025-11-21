@@ -43,7 +43,8 @@ export default function ContentCalendarPage() {
     scheduledTime: '',
   });
 
-  const { getContentCalendar, schedulePost, updateScheduledPost, deleteScheduledPost } = useSocialService();
+  const { getContentCalendar, schedulePost, updateScheduledPost, deleteScheduledPost, postNow } = useSocialService();
+  const [posting, setPosting] = useState(false);
 
   useEffect(() => {
     const fetchCalendar = async () => {
@@ -131,7 +132,6 @@ export default function ContentCalendarPage() {
     const today = new Date();
     setCurrentMonth(today.getMonth());
     setCurrentYear(today.getFullYear());
-    setSelectedDate(null);
   };
 
 
@@ -201,6 +201,34 @@ export default function ContentCalendarPage() {
     } catch (error) {
       console.error('Failed to update post:', error);
       alert('Failed to update post. Please try again.');
+    }
+  };
+
+  const handleEditClick = (post: ScheduledPost) => {
+    handlePostClick(post);
+  };
+
+  const handlePostNow = async () => {
+    if (!editingPost) return;
+
+    if (!confirm(`Are you sure you want to post this to ${editingPost.platform} now?\n\nContent: ${editingPost.content.substring(0, 100)}${editingPost.content.length > 100 ? '...' : ''}`)) {
+      return;
+    }
+
+    setPosting(true);
+    try {
+      await postNow(editingPost.id);
+      // Refresh calendar
+      const data = await getContentCalendar(currentMonth + 1, currentYear);
+      setPosts(data.posts);
+      alert('Post published successfully!');
+      setShowEditModal(false);
+      setEditingPost(null);
+    } catch (error: any) {
+      console.error('Failed to post:', error);
+      alert(`Failed to post: ${error.response?.data?.error || error.message || 'Unknown error'}`);
+    } finally {
+      setPosting(false);
     }
   };
 
@@ -650,6 +678,14 @@ export default function ContentCalendarPage() {
                     }}
                   >
                     Cancel
+                  </Button>
+                  <Button
+                    variant="gradient"
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={handlePostNow}
+                    disabled={posting || !editingPost || editingPost.status === 'published'}
+                  >
+                    {posting ? 'Posting...' : 'Post Now'}
                   </Button>
                   <Button
                     variant="gradient"

@@ -10,6 +10,7 @@ import {
   schedulePost,
   updateScheduledPost,
   deleteScheduledPost,
+  postNow,
   getContentSuggestions,
   handleGoogleOAuthCallback,
   handleMetaOAuthCallback,
@@ -46,6 +47,7 @@ router.get('/content/calendar', requireAuth, getContentCalendar);
 router.post('/content/schedule', requireAuth, schedulePost);
 router.put('/content/schedule/:id', requireAuth, updateScheduledPost);
 router.delete('/content/schedule/:id', requireAuth, deleteScheduledPost);
+router.post('/content/post/:id', requireAuth, postNow);
 router.get('/content/suggestions', requireAuth, getContentSuggestions);
 
 // Objectives routes
