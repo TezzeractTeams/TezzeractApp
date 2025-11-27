@@ -43,8 +43,9 @@ export default function ContentCalendarPage() {
     scheduledTime: '',
   });
 
-  const { getContentCalendar, schedulePost, updateScheduledPost, deleteScheduledPost, postNow } = useSocialService();
+  const { getContentCalendar, schedulePost, updateScheduledPost, deleteScheduledPost, postNow, getConnectedPlatforms } = useSocialService();
   const [posting, setPosting] = useState(false);
+  const [connectedPlatforms, setConnectedPlatforms] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchCalendar = async () => {
@@ -61,6 +62,43 @@ export default function ContentCalendarPage() {
     fetchCalendar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMonth, currentYear]);
+
+  // Fetch connected platforms on mount and when edit modal opens
+  useEffect(() => {
+    const fetchPlatforms = async () => {
+      try {
+        const data = await getConnectedPlatforms();
+        // Map platform IDs to a Set for quick lookup
+        // Map frontend platform names to backend platform IDs
+        const platformMap: Record<string, string> = {
+          twitter: 'twitter',
+          facebook: 'meta',
+          instagram: 'meta',
+          linkedin: 'linkedin',
+          youtube: 'youtube',
+        };
+        
+        const connected = new Set<string>();
+        data.platforms.forEach(platform => {
+          if (platform.connected) {
+            // Add the backend platform ID
+            connected.add(platform.id);
+            // Also add frontend platform names that map to this backend ID
+            Object.entries(platformMap).forEach(([frontendName, backendId]) => {
+              if (backendId === platform.id) {
+                connected.add(frontendName);
+              }
+            });
+          }
+        });
+        setConnectedPlatforms(connected);
+      } catch (error) {
+        console.error('Failed to fetch connected platforms:', error);
+      }
+    };
+
+    fetchPlatforms();
+  }, [showEditModal, getConnectedPlatforms]);
 
   // Helper function to get local date string (YYYY-MM-DD) without timezone issues
   const getLocalDateString = (date: Date): string => {
@@ -157,7 +195,7 @@ export default function ContentCalendarPage() {
     }
   };
 
-  const handlePostClick = (post: ScheduledPost, e?: React.MouseEvent) => {
+  const handlePostClick = async (post: ScheduledPost, e?: React.MouseEvent) => {
     // Prevent event bubbling if clicked from calendar grid
     if (e) {
       e.stopPropagation();
@@ -174,6 +212,33 @@ export default function ContentCalendarPage() {
       scheduledTime: timeStr,
     });
     setShowEditModal(true);
+    
+    // Refresh platform connections when opening edit modal
+    try {
+      const data = await getConnectedPlatforms();
+      const platformMap: Record<string, string> = {
+        twitter: 'twitter',
+        facebook: 'meta',
+        instagram: 'meta',
+        linkedin: 'linkedin',
+        youtube: 'youtube',
+      };
+      
+      const connected = new Set<string>();
+      data.platforms.forEach(platform => {
+        if (platform.connected) {
+          connected.add(platform.id);
+          Object.entries(platformMap).forEach(([frontendName, backendId]) => {
+            if (backendId === platform.id) {
+              connected.add(frontendName);
+            }
+          });
+        }
+      });
+      setConnectedPlatforms(connected);
+    } catch (error) {
+      console.error('Failed to refresh platform connections:', error);
+    }
   };
 
   const handleUpdatePost = async () => {
@@ -204,8 +269,8 @@ export default function ContentCalendarPage() {
     }
   };
 
-  const handleEditClick = (post: ScheduledPost) => {
-    handlePostClick(post);
+  const handleEditClick = async (post: ScheduledPost) => {
+    await handlePostClick(post);
   };
 
   const handlePostNow = async () => {
@@ -683,7 +748,19 @@ export default function ContentCalendarPage() {
                     variant="gradient"
                     className="bg-green-600 hover:bg-green-700"
                     onClick={handlePostNow}
-                    disabled={posting || !editingPost || editingPost.status === 'published'}
+                    disabled={
+                      posting || 
+                      !editingPost || 
+                      editingPost.status === 'published' ||
+                      !connectedPlatforms.has(editingPost.platform)
+                    }
+                    title={
+                      !connectedPlatforms.has(editingPost.platform)
+                        ? `Please connect ${editingPost.platform} in Settings first`
+                        : editingPost.status === 'published'
+                        ? 'This post has already been published'
+                        : 'Post this content now'
+                    }
                   >
                     {posting ? 'Posting...' : 'Post Now'}
                   </Button>

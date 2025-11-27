@@ -917,8 +917,12 @@ export default function SettingsPage() {
             window.removeEventListener('message', handleMessage);
             
             // Close popup if still open
-            if (authWindow && !authWindow.closed) {
-              authWindow.close();
+            try {
+              if (authWindow && !authWindow.closed) {
+                authWindow.close();
+              }
+            } catch (error) {
+              // Ignore COOP errors when closing window
             }
 
             // Check if this is Google Analytics and needs property selection
@@ -956,8 +960,12 @@ export default function SettingsPage() {
             window.removeEventListener('message', handleMessage);
             
             // Close popup if still open
-            if (authWindow && !authWindow.closed) {
-              authWindow.close();
+            try {
+              if (authWindow && !authWindow.closed) {
+                authWindow.close();
+              }
+            } catch (error) {
+              // Ignore COOP errors when closing window
             }
 
             // Show error message
@@ -970,19 +978,26 @@ export default function SettingsPage() {
 
         // Fallback: Check if popup is closed (in case message doesn't fire)
         const checkClosed = setInterval(() => {
-          if (authWindow?.closed) {
+          try {
+            // Check if window is closed (may fail due to COOP policy)
+            if (authWindow?.closed) {
+              clearInterval(checkClosed);
+              window.removeEventListener('message', handleMessage);
+              // Refresh platforms list as fallback
+              const fetchPlatforms = async () => {
+                try {
+                  const data = await getConnectedPlatforms();
+                  setPlatforms(data.platforms);
+                } catch (error) {
+                  console.error('Failed to refresh platforms:', error);
+                }
+              };
+              fetchPlatforms();
+            }
+          } catch (error) {
+            // Ignore COOP errors - we'll rely on message event instead
+            // Clear interval if we can't check window status
             clearInterval(checkClosed);
-            window.removeEventListener('message', handleMessage);
-            // Refresh platforms list as fallback
-            const fetchPlatforms = async () => {
-              try {
-                const data = await getConnectedPlatforms();
-                setPlatforms(data.platforms);
-              } catch (error) {
-                console.error('Failed to refresh platforms:', error);
-              }
-            };
-            fetchPlatforms();
           }
         }, 1000);
       }
