@@ -51,7 +51,7 @@ interface ChartDataPoint {
 // Get dashboard analytics
 export const getDashboardAnalytics = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth.userId;
+    const userId = req.auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -189,7 +189,7 @@ export const getDashboardAnalytics = async (req: AuthRequest, res: Response) => 
 // Get AI insights
 export const getAIInsights = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth.userId;
+    const userId = req.auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -305,7 +305,7 @@ export const getAIInsights = async (req: AuthRequest, res: Response) => {
 // Get connected platforms
 export const getConnectedPlatforms = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth.userId;
+    const userId = req.auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -362,7 +362,7 @@ export const getConnectedPlatforms = async (req: AuthRequest, res: Response) => 
 // Connect platform (OAuth initiation)
 export const connectPlatform = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth.userId;
+    const userId = req.auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -419,7 +419,7 @@ export const connectPlatform = async (req: AuthRequest, res: Response) => {
 // Disconnect platform
 export const disconnectPlatform = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth.userId;
+    const userId = req.auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -524,7 +524,7 @@ export const handleGoogleOAuthCallback = async (req: Request, res: Response) => 
 // Get Google Analytics properties
 export const getGoogleAnalyticsPropertiesList = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth.userId;
+    const userId = req.auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -540,7 +540,7 @@ export const getGoogleAnalyticsPropertiesList = async (req: AuthRequest, res: Re
 // Update Google Analytics property selection
 export const updateGoogleAnalyticsPropertySelection = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth.userId;
+    const userId = req.auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -1097,11 +1097,13 @@ export const getObjectives = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+    const userId = req.auth.userId;
+
     // Get user's organization first
     const { data: org } = await supabase
       .from('organizations')
       .select('id')
-      .eq('user_id', req.auth.userId)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (!org) {
@@ -1140,7 +1142,7 @@ export const getObjectives = async (req: AuthRequest, res: Response) => {
     // Transform to match frontend interface
     const transformed = (data || []).map((obj: any) => ({
       id: obj.id,
-      user_id: req.auth.userId, // Map for frontend compatibility
+      user_id: userId, // Map for frontend compatibility
       objective_type: mapDbTypeToFrontend(obj.type),
       description: obj.description,
       target_impressions: obj.target_metrics?.impressions || 0,
@@ -1182,6 +1184,7 @@ export const createObjective = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+    const userId = req.auth.userId;
     const { objective_type, description, target_impressions, target_reach, start_date, end_date } = req.body;
 
     if (!objective_type || !description || !start_date || !end_date) {
@@ -1194,7 +1197,7 @@ export const createObjective = async (req: AuthRequest, res: Response) => {
     const { data: org, error: orgError } = await supabase
       .from('organizations')
       .select('id')
-      .eq('user_id', req.auth.userId)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (orgError || !org) {
@@ -1251,7 +1254,7 @@ export const createObjective = async (req: AuthRequest, res: Response) => {
     // Transform response to match frontend interface
     const transformed = {
       id: data.id,
-      user_id: req.auth.userId,
+      user_id: userId,
       objective_type: mapDbTypeToFrontend(data.type),
       description: data.description,
       target_impressions: data.target_metrics?.impressions || 0,

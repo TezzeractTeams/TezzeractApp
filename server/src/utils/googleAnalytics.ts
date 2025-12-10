@@ -34,7 +34,7 @@ export async function getGoogleAnalyticsProperties(userId: string): Promise<Arra
     }
   }
 
-  const accountsData = await accountsResponse.json();
+  const accountsData = await accountsResponse.json() as { accounts?: any[] };
   const accounts = accountsData.accounts || [];
 
   if (accounts.length === 0) {
@@ -57,7 +57,7 @@ export async function getGoogleAnalyticsProperties(userId: string): Promise<Arra
     );
 
     if (propertiesResponse.ok) {
-      const propertiesData = await propertiesResponse.json();
+      const propertiesData = await propertiesResponse.json() as { properties?: any[] };
       const properties = propertiesData.properties || [];
 
       for (const property of properties) {
@@ -88,7 +88,7 @@ async function getPropertiesFromManagementAPI(accessToken: string): Promise<Arra
     throw new Error('Failed to fetch accounts from Management API');
   }
 
-  const accountsData = await accountsResponse.json();
+  const accountsData = await accountsResponse.json() as { items?: any[] };
   const accounts = accountsData.items || [];
 
   const allProperties: Array<{ id: string; name: string; accountId: string }> = [];
@@ -105,7 +105,7 @@ async function getPropertiesFromManagementAPI(accessToken: string): Promise<Arra
     );
 
     if (propertiesResponse.ok) {
-      const propertiesData = await propertiesResponse.json();
+      const propertiesData = await propertiesResponse.json() as { items?: any[] };
       const properties = propertiesData.items || [];
 
       for (const property of properties) {

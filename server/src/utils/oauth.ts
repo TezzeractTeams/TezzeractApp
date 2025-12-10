@@ -152,7 +152,7 @@ export async function exchangeGoogleCode(code: string): Promise<{
     throw new Error(`Google token exchange failed: ${error}`);
   }
 
-  return await response.json();
+  return await response.json() as { access_token: string; refresh_token?: string; expires_in: number };
 }
 
 // Exchange authorization code for access token - Meta
@@ -186,7 +186,7 @@ export async function exchangeMetaCode(code: string): Promise<{
     throw new Error(`Meta token exchange failed: ${error}`);
   }
 
-  return await response.json();
+  return await response.json() as { access_token: string; expires_in: number };
 }
 
 // Exchange authorization code for access token - Twitter
@@ -225,6 +225,6 @@ export async function exchangeTwitterCode(code: string, codeVerifier: string): P
     throw new Error(`Twitter token exchange failed: ${error}`);
   }
 
-  return await response.json();
+  return await response.json() as { access_token: string; refresh_token?: string; expires_in: number };
 }
 

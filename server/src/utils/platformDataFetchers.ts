@@ -334,7 +334,7 @@ export async function fetchGoogleAnalyticsData(
       return null;
     }
 
-    const data = await response.json();
+    const data = await response.json() as { rows?: any[] };
     const rows = data.rows || [];
     
     if (rows.length === 0) {
@@ -390,7 +390,7 @@ export async function fetchYouTubeData(
       return null;
     }
 
-    const channelData = await channelResponse.json();
+    const channelData = await channelResponse.json() as { items?: any[] };
     const channel = channelData.items?.[0];
     
     if (!channel) {
@@ -416,7 +416,7 @@ export async function fetchYouTubeData(
     let engagement = 0;
     
     if (analyticsResponse.ok) {
-      const analyticsData = await analyticsResponse.json();
+      const analyticsData = await analyticsResponse.json() as { rows?: any[] };
       const rows = analyticsData.rows || [];
       if (rows.length > 0) {
         views = rows[0][0] || 0; // views
@@ -469,7 +469,7 @@ export async function fetchMetaData(
       return null;
     }
 
-    const pagesData = await pagesResponse.json();
+    const pagesData = await pagesResponse.json() as { data?: any[] };
     const pages = pagesData.data || [];
 
     if (pages.length === 0) {
@@ -492,7 +492,7 @@ export async function fetchMetaData(
       );
 
       if (insightsResponse.ok) {
-        const insightsData = await insightsResponse.json();
+        const insightsData = await insightsResponse.json() as { data?: any[] };
         const insights = insightsData.data || [];
 
         for (const insight of insights) {
@@ -520,7 +520,7 @@ export async function fetchMetaData(
       );
 
       if (pageInfoResponse.ok) {
-        const pageInfo = await pageInfoResponse.json();
+        const pageInfo = await pageInfoResponse.json() as { followers_count?: string };
         totalFollowers += parseInt(pageInfo.followers_count || '0');
       }
     }
@@ -588,7 +588,7 @@ export async function fetchTwitterData(
       return null;
     }
 
-    const userData = await userResponse.json();
+    const userData = await userResponse.json() as { data?: any };
     const user = userData.data;
     const metrics = user?.public_metrics || {};
 
@@ -618,7 +618,7 @@ export async function fetchTwitterData(
     let totalEngagement = 0;
 
     if (tweetsResponse.ok) {
-      const tweetsData = await tweetsResponse.json();
+      const tweetsData = await tweetsResponse.json() as { data?: any[] };
       const tweets = tweetsData.data || [];
 
       for (const tweet of tweets) {
