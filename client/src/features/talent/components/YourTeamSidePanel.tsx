@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { TezzeractButton } from "@/shared/components/ui/TezzeractButton";
-import { X, Plus, ArrowRight } from "lucide-react";
+import { Plus } from "lucide-react";
 import { YourTeamCard } from "./YourTeamCard";
 
 interface Talent {
@@ -25,10 +25,6 @@ export const YourTeamSidePanel: React.FC<YourTeamSidePanelProps> = ({
 }) => {
   const [isClosing, setIsClosing] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-
-  const handleClose = () => {
-    setIsClosing(true);
-  };
 
   useEffect(() => {
     // Trigger slide-in animation on mount

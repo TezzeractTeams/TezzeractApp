@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
-import { Calendar, Plus, Twitter, Facebook, Instagram, Youtube, Linkedin, LayoutGrid, List, X } from 'lucide-react';
+import { Calendar, Plus, Twitter, Facebook, Instagram, Youtube, Linkedin, LayoutGrid, List } from 'lucide-react';
 import { useSocialService } from '@/shared/services/socialService';
 import type { ScheduledPost } from '@/shared/services/socialService';
 
@@ -127,7 +127,6 @@ export default function ContentCalendarPage() {
   // Generate calendar days
   const calendarDays = useMemo(() => {
     const firstDay = new Date(currentYear, currentMonth, 1);
-    const lastDay = new Date(currentYear, currentMonth + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - startDate.getDay()); // Start from Sunday
     
@@ -179,7 +178,7 @@ export default function ContentCalendarPage() {
 
   const handleSchedulePost = async () => {
     try {
-      const result = await schedulePost(
+      await schedulePost(
         newPost.platform,
         newPost.content,
         new Date(newPost.scheduledFor)
