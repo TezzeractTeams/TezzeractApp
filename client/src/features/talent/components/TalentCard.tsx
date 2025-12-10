@@ -1,4 +1,4 @@
-import { BadgeCheck } from "lucide-react";
+import { Plus, BadgeCheck } from "lucide-react";
 
 type TalentCardProps = {
   id: string;
@@ -14,9 +14,12 @@ type TalentCardProps = {
 };
 
 export function TalentCard({
+  id,
   name,
   skills,
   image_url,
+  experience_years,
+  availability,
   onPlusClick,
   onMinusClick,
   onCardClick,

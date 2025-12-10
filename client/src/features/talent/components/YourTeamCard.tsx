@@ -11,9 +11,12 @@ interface YourTeamCardProps {
 }
 
 export function YourTeamCard({
+  id,
   image_url,
   name,
   skills,
+  experience_years,
+  availability,
   onRemove,
 }: YourTeamCardProps) {
   return (
