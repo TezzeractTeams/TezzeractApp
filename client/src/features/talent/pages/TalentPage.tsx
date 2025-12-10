@@ -216,6 +216,7 @@ export default function TalentPage() {
           <AvailableTalents
             talents={filteredTalents}
             isLoading={!hasUserMessage ? isFetchingTalents : false}
+            hasUserMessage={hasUserMessage}
             yourTeam={yourTeam}
             onAddToTeam={handleAddToTeam}
             onRemoveFromTeam={removeFromTeam}
