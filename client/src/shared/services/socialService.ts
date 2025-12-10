@@ -1,17 +1,5 @@
-import axios, { AxiosInstance } from 'axios';
+import { AxiosInstance } from 'axios';
 import { createAuthenticatedAxios, getSupabaseToken } from '../lib/api';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-
-// Create a simple axios instance for public routes (no auth required)
-const createPublicAxios = (): AxiosInstance => {
-  return axios.create({
-    baseURL: API_URL,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-};
 
 // Create authenticated axios instance for protected routes
 const createAuthAxios = (): AxiosInstance => {
@@ -27,8 +15,10 @@ export interface DashboardMetrics {
   followers: number;
 }
 
+export type PlatformType = 'twitter' | 'facebook' | 'instagram' | 'youtube' | 'google_analytics';
+
 export interface PlatformMetrics {
-  platform: string;
+  platform: PlatformType;
   metrics: DashboardMetrics;
   change: number;
   trend: 'up' | 'down' | 'stable';
@@ -105,11 +95,9 @@ export interface Objective {
 
 /**
  * Hook to use social media service
- * Uses authenticated API for platform management, public API for dashboard (if needed)
+ * Uses authenticated API for platform management
  */
 export const useSocialService = () => {
-  // Use public API for dashboard (if it doesn't require auth)
-  const publicApi = createPublicAxios();
   // Use authenticated API for platform management
   const authApi = createAuthAxios();
 
