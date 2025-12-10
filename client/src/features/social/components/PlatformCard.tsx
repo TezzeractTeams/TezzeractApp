@@ -2,30 +2,15 @@ import { Card, CardContent } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Twitter, Facebook, Instagram, Youtube, BarChart3 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
-
-type PlatformType = 'twitter' | 'facebook' | 'instagram' | 'youtube' | 'google_analytics';
-
-interface PlatformMetrics {
-  platform: PlatformType;
-  metrics: {
-    impressions: number;
-    reach: number;
-    engagement: number;
-    clicks: number;
-    conversions: number;
-    followers: number;
-  };
-  change: number;
-  trend: 'up' | 'down' | 'stable';
-}
+import type { PlatformMetrics } from '@/shared/services/socialService';
 
 interface PlatformCardProps {
-  platform: PlatformType;
+  platform: string;
   metrics: PlatformMetrics;
   onViewDetails: () => void;
 }
 
-const platformConfig: Record<PlatformType, { name: string; icon: LucideIcon; color: string; bgColor: string }> = {
+const platformConfig: Record<string, { name: string; icon: LucideIcon; color: string; bgColor: string }> = {
   twitter: { 
     name: 'Twitter/X', 
     icon: Twitter, 
@@ -69,7 +54,7 @@ const formatNumber = (num: number): string => {
 };
 
 export function PlatformCard({ platform, metrics, onViewDetails }: PlatformCardProps) {
-  const config = platformConfig[platform];
+  const config = platformConfig[platform] || platformConfig['twitter']; // Fallback to twitter config
   const Icon = config.icon;
   
   const hasData = metrics.metrics.impressions > 0 || metrics.metrics.reach > 0 || metrics.metrics.engagement > 0;
