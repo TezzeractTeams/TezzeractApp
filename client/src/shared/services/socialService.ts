@@ -18,7 +18,7 @@ export interface DashboardMetrics {
 export type PlatformType = 'twitter' | 'facebook' | 'instagram' | 'youtube' | 'google_analytics';
 
 export interface PlatformMetrics {
-  platform: PlatformType;
+  platform: string;
   metrics: DashboardMetrics;
   change: number;
   trend: 'up' | 'down' | 'stable';
