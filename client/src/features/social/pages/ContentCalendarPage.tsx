@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -190,7 +191,7 @@ export default function ContentCalendarPage() {
       setPosts(data.posts);
     } catch (error) {
       console.error('Failed to schedule post:', error);
-      alert('Failed to schedule post. Please try again.');
+      toast.error('Failed to schedule post. Please try again.');
     }
   };
 
@@ -242,7 +243,7 @@ export default function ContentCalendarPage() {
 
   const handleUpdatePost = async () => {
     if (!editingPost || !editPost.content || !editPost.scheduledFor || !editPost.scheduledTime) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
 
@@ -261,10 +262,10 @@ export default function ContentCalendarPage() {
       // Refresh calendar
       const data = await getContentCalendar(currentMonth + 1, currentYear);
       setPosts(data.posts);
-      alert('Post updated successfully!');
+      toast.success('Post updated successfully!');
     } catch (error) {
       console.error('Failed to update post:', error);
-      alert('Failed to update post. Please try again.');
+      toast.error('Failed to update post. Please try again.');
     }
   };
 
@@ -285,12 +286,12 @@ export default function ContentCalendarPage() {
       // Refresh calendar
       const data = await getContentCalendar(currentMonth + 1, currentYear);
       setPosts(data.posts);
-      alert('Post published successfully!');
+      toast.success('Post published successfully!');
       setShowEditModal(false);
       setEditingPost(null);
     } catch (error: any) {
       console.error('Failed to post:', error);
-      alert(`Failed to post: ${error.response?.data?.error || error.message || 'Unknown error'}`);
+      toast.error(`Failed to post: ${error.response?.data?.error || error.message || 'Unknown error'}`);
     } finally {
       setPosting(false);
     }
@@ -308,10 +309,10 @@ export default function ContentCalendarPage() {
       // Refresh calendar
       const data = await getContentCalendar(currentMonth + 1, currentYear);
       setPosts(data.posts);
-      alert('Post deleted successfully!');
+      toast.success('Post deleted successfully!');
     } catch (error) {
       console.error('Failed to delete post:', error);
-      alert('Failed to delete post. Please try again.');
+      toast.error('Failed to delete post. Please try again.');
     }
   };
 

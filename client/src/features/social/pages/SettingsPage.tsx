@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -1003,7 +1004,7 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('Failed to connect platform:', error);
-      alert('Failed to initiate platform connection. Please try again.');
+      toast.error('Failed to initiate platform connection. Please try again.');
     }
   };
 

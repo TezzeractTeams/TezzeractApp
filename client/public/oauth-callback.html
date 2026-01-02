@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
   <title>OAuth Callback</title>
   <style>
     body {
@@ -59,7 +60,7 @@
         window.opener.postMessage({ type: 'oauth-success', success: 'connected', platform: platform || null }, window.location.origin);
       }
     }
-
+    
     // Close the popup after a short delay
     setTimeout(() => {
       window.close();
