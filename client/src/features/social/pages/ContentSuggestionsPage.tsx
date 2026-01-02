@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -100,7 +101,7 @@ export default function ContentSuggestionsPage() {
     
     // Validate required fields
     if (!objectiveForm.objective_type || !objectiveForm.description || !objectiveForm.start_date || !objectiveForm.end_date) {
-      alert('Please fill in all required fields (Objective Type, Description, Start Date, and End Date)');
+      toast.error('Please fill in all required fields (Objective Type, Description, Start Date, and End Date)');
       return;
     }
     
@@ -125,7 +126,7 @@ export default function ContentSuggestionsPage() {
       setShowObjectiveForm(false);
     } catch (error) {
       console.error('Failed to create objective:', error);
-      alert('Failed to create objective. Please try again.');
+      toast.error('Failed to create objective. Please try again.');
     }
   };
 
@@ -135,13 +136,13 @@ export default function ContentSuggestionsPage() {
       setObjectives(objectives.filter(obj => obj.id !== id));
     } catch (error) {
       console.error('Failed to delete objective:', error);
-      alert('Failed to delete objective. Please try again.');
+      toast.error('Failed to delete objective. Please try again.');
     }
   };
 
   const handleGenerate = async () => {
     if (objectives.length === 0) {
-      alert('Please add at least one objective before generating content suggestions.');
+      toast.error('Please add at least one objective before generating content suggestions.');
       return;
     }
 
@@ -152,7 +153,7 @@ export default function ContentSuggestionsPage() {
       setSuggestions(data.suggestions);
     } catch (error) {
       console.error('Failed to generate suggestions:', error);
-      alert('Failed to generate content suggestions. Please try again.');
+      toast.error('Failed to generate content suggestions. Please try again.');
     } finally {
       setGenerating(false);
     }
@@ -174,7 +175,7 @@ export default function ContentSuggestionsPage() {
 
   const handleScheduleSubmit = async () => {
     if (!selectedSuggestion || !scheduleDate || !scheduleTime) {
-      alert('Please select both date and time');
+      toast.error('Please select both date and time');
       return;
     }
 
@@ -195,10 +196,10 @@ export default function ContentSuggestionsPage() {
       
       setShowScheduleModal(false);
       setSelectedSuggestion(null);
-      alert('Post scheduled successfully! It will appear in your calendar.');
+      toast.success('Post scheduled successfully! It will appear in your calendar.');
     } catch (error) {
       console.error('Failed to schedule post:', error);
-      alert('Failed to schedule post. Please try again.');
+      toast.error('Failed to schedule post. Please try again.');
     }
   };
 
