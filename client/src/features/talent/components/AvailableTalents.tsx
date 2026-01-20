@@ -16,8 +16,6 @@ interface AvailableTalentsProps {
   isLoading: boolean;
   yourTeam: Talent[];
   onAddToTeam: (talent: Talent) => void;
-  onRemoveFromTeam?: (talentId: string) => void;
-  showYourTeam?: boolean;
 }
 
 // Skeleton loader for talent cards
@@ -35,15 +33,11 @@ export function AvailableTalents({
   isLoading,
   yourTeam,
   onAddToTeam,
-  onRemoveFromTeam,
-  showYourTeam = false,
 }: AvailableTalentsProps) {
   const [selectedTalent, setSelectedTalent] = useState<Talent | null>(null);
   
-  // Adjust grid columns based on whether Your Team panel is visible
-  const gridCols = showYourTeam 
-    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" 
-    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+  // Grid columns for AI-selected talents
+  const gridCols = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
 
   // If a talent is selected, show portfolio
   if (selectedTalent) {
@@ -82,10 +76,8 @@ export function AvailableTalents({
                   skills={talent.skills}
                   experience_years={talent.experience_years}
                   availability={talent.availability}
-                  onPlusClick={() => onAddToTeam(talent)}
-                  onMinusClick={() => onRemoveFromTeam?.(talent.id)}
                   onCardClick={() => setSelectedTalent(talent)}
-                  isDisabled={yourTeam.some((t) => t.id === talent.id)}
+                  isDisabled={false}
                 />
               </div>
             ))}

@@ -16,6 +16,7 @@ export default {
       colors: {
         white: '#ffffff',
         black: '#000000',
+        'global-bg-white': '#F2F2F2',
         gray: {
           50: '#f9fafb',
           100: '#f3f4f6',

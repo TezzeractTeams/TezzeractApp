@@ -8,6 +8,8 @@ interface Organization {
   industry?: string;
   website?: string;
   description?: string;
+  based_in?: string;
+  company_size?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -55,7 +57,7 @@ export const createOrganization = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const { name, industry, website, description } = req.body;
+    const { name, industry, website, description, based_in, company_size } = req.body;
 
     // Validate required fields
     if (!name) {
@@ -103,6 +105,8 @@ export const createOrganization = async (req: Request, res: Response) => {
           industry: industry || null,
           website: website || null,
           description: description || null,
+          based_in: based_in || null,
+          company_size: company_size || null,
         },
       ])
       .select()
@@ -127,7 +131,7 @@ export const updateOrganization = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const { name, industry, website, description } = req.body;
+    const { name, industry, website, description, based_in, company_size } = req.body;
 
     // Check if organization exists
     const { data: existingOrg } = await supabase
@@ -145,6 +149,8 @@ export const updateOrganization = async (req: Request, res: Response) => {
     if (industry !== undefined) updates.industry = industry || null;
     if (website !== undefined) updates.website = website || null;
     if (description !== undefined) updates.description = description || null;
+    if (based_in !== undefined) updates.based_in = based_in || null;
+    if (company_size !== undefined) updates.company_size = company_size || null;
 
     const { data, error } = await supabase
       .from('organizations')

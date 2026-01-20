@@ -1,12 +1,13 @@
 import { Button } from '@/shared/components/ui/Button';
 import { Hash, Users, Send } from 'lucide-react';
 import { Input } from '@/shared/components/ui/Input';
+import TezzeractTextLogo from '@/assets/images/TezzeractTextLogo.png';
 
 export default function ChatPage() {
   return (
     <div className="h-screen flex animate-fade-in">
       {/* Channels Sidebar */}
-      <div className="w-64 border-r border-gray-200 bg-white p-4 space-y-4">
+      <div className="w-64 border-r border-gray-200 bg-[#FAFAFA] space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-lg text-gray-900">Channels</h2>
           <Button variant="ghost" size="icon">+</Button>
@@ -58,11 +59,11 @@ export default function ChatPage() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col ">
         {/* Chat Header */}
         <div className="h-16 border-b border-gray-200 bg-white px-6 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Hash className="w-5 h-5 text-gray-600" />
+            <img src={TezzeractTextLogo} alt="Tezzeract" className="h-8" />
             <div>
               <h2 className="font-semibold text-gray-900">general</h2>
               <p className="text-xs text-gray-500">12 members</p>
@@ -75,7 +76,7 @@ export default function ChatPage() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-auto p-6 space-y-4 bg-gray-50">
+        <div className="flex-1 overflow-auto px-6 space-y-4 bg-gray-50">
           {[
             { user: 'John Doe', message: 'Hey team! How is everyone doing?', time: '10:30 AM' },
             { user: 'Jane Smith', message: 'Great! Just finished the new feature.', time: '10:32 AM' },
@@ -98,7 +99,7 @@ export default function ChatPage() {
         </div>
 
         {/* Message Input */}
-        <div className="p-4 border-t border-gray-200 bg-white">
+        <div className="px-4 border-t border-gray-200 bg-white">
           <div className="flex items-center space-x-2">
             <Input
               placeholder="Type a message..."

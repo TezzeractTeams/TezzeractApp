@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -769,9 +768,9 @@ function AISettingsTabContent() {
               AI Provider
             </label>
             <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent">
+              <option value="google">Google (Gemini)</option>
               <option value="openai">OpenAI (GPT-4)</option>
               <option value="anthropic">Anthropic (Claude)</option>
-              <option value="google">Google (Gemini)</option>
             </select>
           </div>
           <div>
@@ -788,9 +787,11 @@ function AISettingsTabContent() {
               Model Preference
             </label>
             <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent">
-              <option value="gpt-4">GPT-4 (Recommended)</option>
-              <option value="gpt-4-turbo">GPT-4 Turbo</option>
-              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash (Free Tier)</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro (Free Tier)</option>
+              <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+              <option value="gemini-2.5-pro">Gemini 2.5 Pro (Paid)</option>
+              <option value="gemini-flash-latest">Gemini Flash Latest</option>
             </select>
           </div>
           <Button variant="gradient">Save AI Settings</Button>
@@ -1004,7 +1005,7 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('Failed to connect platform:', error);
-      toast.error('Failed to initiate platform connection. Please try again.');
+      alert('Failed to initiate platform connection. Please try again.');
     }
   };
 

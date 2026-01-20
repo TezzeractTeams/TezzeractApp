@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { TezzeractButton } from "@/shared/components/ui/TezzeractButton";
 import { Plus } from "lucide-react";
 import { YourTeamCard } from "./YourTeamCard";
@@ -23,6 +24,7 @@ export const YourTeamSidePanel: React.FC<YourTeamSidePanelProps> = ({
   onClose,
   onRemoveFromTeam,
 }) => {
+  const navigate = useNavigate();
   const [isClosing, setIsClosing] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -97,7 +99,15 @@ export const YourTeamSidePanel: React.FC<YourTeamSidePanelProps> = ({
         
         {/* Create Meeting Button - Fixed at bottom */}
         <div className="pt-4 pb-4 border-t border-gray-200 space-y-3">
-          <TezzeractButton fullWidth={true}>
+          <TezzeractButton 
+            fullWidth={true}
+            onClick={() => {
+              if (team.length > 0) {
+                navigate("/talent/create-meeting");
+              }
+            }}
+            disabled={team.length === 0}
+          >
             <Plus className="w-4 h-4" /> Create meeting
           </TezzeractButton>
         </div>

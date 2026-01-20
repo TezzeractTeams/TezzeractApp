@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "@/shared/contexts/AuthContext";
+import { useTeamStore } from "@/shared/stores/useTeamStore";
 import { Button } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/ui/Input";
 
@@ -11,13 +13,26 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose, initialMode = "signin" }: AuthModalProps) {
+  const navigate = useNavigate();
+  const { team } = useTeamStore();
   const [isSignUp, setIsSignUp] = useState(initialMode === "signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [authFormLoading, setAuthFormLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signIn, signUp, signInWithGoogle, user } = useAuth();
+  
+  // Redirect to CreateMeetingPage after successful login if team exists
+  useEffect(() => {
+    if (user && team.length > 0 && isOpen) {
+      // User just logged in and has a team, redirect to CreateMeetingPage
+      onClose();
+      setTimeout(() => {
+        navigate('/talent/create-meeting');
+      }, 500);
+    }
+  }, [user, team.length, isOpen, navigate, onClose]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();

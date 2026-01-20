@@ -7,8 +7,6 @@ type TalentCardProps = {
   image_url: string;
   experience_years: number;
   availability: boolean;
-  onPlusClick?: () => void;
-  onMinusClick?: () => void;
   onCardClick?: () => void;
   isDisabled?: boolean;
 };
@@ -17,15 +15,13 @@ export function TalentCard({
   name,
   skills,
   image_url,
-  onPlusClick,
-  onMinusClick,
   onCardClick,
   isDisabled = false,
 }: TalentCardProps) {
   return (
     <div
       onClick={onCardClick}
-      className="rounded-[30px] flex flex-col justify-end overflow-hidden relative group cursor-pointer w-full aspect-[3/4]"
+      className="rounded-[30px] flex flex-col justify-end overflow-hidden relative group w-full aspect-[3/4] cursor-pointer"
     >
       {/* Background Image */}
       <img
@@ -83,34 +79,7 @@ export function TalentCard({
           )}
         </div>
 
-        {/* Plus/Minus button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (isDisabled && onMinusClick) {
-              onMinusClick();
-            } else {
-              onPlusClick?.();
-            }
-          }}
-          className="talent-card-button absolute bottom-6 border-[1px] border-[#009BE9] right-4 w-12 h-12 rounded-full transition-all duration-500 flex items-center justify-center shadow-lg overflow-hidden"
-          style={{
-            background: 'linear-gradient(135deg, #FFFFFF 0%, #CFCFCF 100%)',
-          }}
-        >
-          <div 
-            className="talent-card-icon w-6 h-6 flex items-center justify-center"
-            style={{
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-              WebkitMask: isDisabled 
-                ? 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cline x1=\'5\' y1=\'12\' x2=\'19\' y2=\'12\'%3E%3C/line%3E%3C/svg%3E") center/contain no-repeat'
-                : 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cline x1=\'12\' y1=\'5\' x2=\'12\' y2=\'19\'%3E%3C/line%3E%3Cline x1=\'5\' y1=\'12\' x2=\'19\' y2=\'12\'%3E%3C/line%3E%3C/svg%3E") center/contain no-repeat',
-              mask: isDisabled 
-                ? 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cline x1=\'5\' y1=\'12\' x2=\'19\' y2=\'12\'%3E%3C/line%3E%3C/svg%3E") center/contain no-repeat'
-                : 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cline x1=\'12\' y1=\'5\' x2=\'12\' y2=\'19\'%3E%3C/line%3E%3Cline x1=\'5\' y1=\'12\' x2=\'19\' y2=\'12\'%3E%3C/line%3E%3C/svg%3E") center/contain no-repeat',
-            }}
-          />
-        </button>
+        {/* No button - AI selected talents are fixed */}
       </div>
     </div>
   );
