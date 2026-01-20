@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { TalentCard } from "./TalentCard";
 import { TalentPortfolio } from "./TalentPortfolio";
+import { Skeleton } from "@/shared/components/ui/skeleton";
 
 interface Talent {
   id: string;
@@ -14,6 +15,7 @@ interface Talent {
 interface AvailableTalentsProps {
   talents: Talent[];
   isLoading: boolean;
+  hasUserMessage: boolean;
   yourTeam: Talent[];
   onAddToTeam: (talent: Talent) => void;
 }
@@ -31,6 +33,7 @@ const TalentCardSkeleton = () => (
 export function AvailableTalents({
   talents,
   isLoading,
+  hasUserMessage,
   yourTeam,
   onAddToTeam,
 }: AvailableTalentsProps) {
