@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TezzeractButton } from "@/shared/components/ui/TezzeractButton";
-import { Plus } from "lucide-react";
+import { X, Plus, ArrowRight } from "lucide-react";
 import { YourTeamCard } from "./YourTeamCard";
 
 interface Talent {
@@ -27,6 +27,10 @@ export const YourTeamSidePanel: React.FC<YourTeamSidePanelProps> = ({
   const navigate = useNavigate();
   const [isClosing, setIsClosing] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+  };
 
   useEffect(() => {
     // Trigger slide-in animation on mount
