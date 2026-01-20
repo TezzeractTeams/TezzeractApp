@@ -338,6 +338,7 @@ export default function TalentPage() {
             <AvailableTalents
               talents={filteredTalents}
               isLoading={isResponding}
+              hasUserMessage={hasUserMessage}
               yourTeam={yourTeam}
               onAddToTeam={handleAddToTeam}
             />
