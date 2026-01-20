@@ -3,6 +3,7 @@ import { ProtectedRoute } from './shared/components/ProtectedRoute';
 import PlatformLayout from './shared/layouts/PlatformLayout';
 import HomePage from './features/home/pages/HomePage';
 import TalentPage from './features/talent/pages/TalentPage';
+import CreateMeetingPage from './features/talent/pages/CreateMeetingPage';
 import DashboardPage from './features/social/pages/DashboardPage';
 import SettingsPage from './features/social/pages/SettingsPage';
 import ContentCalendarPage from './features/social/pages/ContentCalendarPage';
@@ -24,13 +25,18 @@ function App() {
           <Route path="/social/settings" element={<SettingsPage />} />
         </Route>
         
+        {/* Public Talent Routes - No Auth Required */}
+        <Route element={<PlatformLayout />}>
+          <Route path="/talent" element={<TalentPage />} />
+          <Route path="/talent/create-meeting" element={<CreateMeetingPage />} />
+        </Route>
+        
         {/* Protected Platform Routes - Auth Required */}
         <Route element={
           <ProtectedRoute>
             <PlatformLayout />
           </ProtectedRoute>
         }>
-          <Route path="/talent" element={<TalentPage />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>

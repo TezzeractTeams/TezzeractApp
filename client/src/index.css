@@ -92,6 +92,10 @@
     animation: slideInRight 0.3s ease-out;
   }
 
+  .animate-buffering {
+    animation: buffering 1.5s ease-in-out infinite;
+  }
+
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -116,6 +120,11 @@
 
   .talent-card-button:hover .talent-card-icon {
     background: white !important;
+  }
+
+  /* Global background color */
+  .bg-global-bg-white {
+    background-color: #F2F2F2;
   }
 }
 
@@ -158,6 +167,15 @@
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes buffering {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
   }
 }
 

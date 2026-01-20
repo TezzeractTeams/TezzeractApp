@@ -9,6 +9,8 @@ export interface Organization {
   industry?: string;
   website?: string;
   description?: string;
+  based_in?: string;
+  company_size?: string;
   created_at?: string;
   updated_at?: string;
 }

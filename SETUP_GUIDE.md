@@ -46,8 +46,9 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your_anon_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 
-# OpenAI (for content suggestions)
-OPENAI_API_KEY=sk-your-openai-key-here
+# Google Gemini (for AI content suggestions and talent search)
+GEMINI_API_KEY=your-gemini-api-key-here
+GEMINI_MODEL=gemini-pro
 
 # JWT Secrets (OPTIONAL - only if using legacy auth endpoints)
 # You can generate random strings or leave these out
@@ -118,7 +119,8 @@ CLIENT_URL=http://localhost:3000
 SUPABASE_URL=your_supabase_url_here
 SUPABASE_ANON_KEY=your_anon_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
-OPENAI_API_KEY=your_openai_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-pro
 EOF
 
 # In the client directory
@@ -213,7 +215,7 @@ After setting up, verify your configuration:
 - ✅ Supabase URL
 - ✅ Supabase Anon Key (public)
 - ✅ Supabase Service Role Key (secret, server only)
-- ✅ OpenAI API Key (for content suggestions)
+- ✅ Google Gemini API Key (for AI content suggestions and talent search)
 
 **You DON'T need:**
 - ❌ JWT_SECRET (unless using legacy auth)
@@ -225,5 +227,5 @@ After setting up, verify your configuration:
 
 - [Supabase Dashboard](https://app.supabase.com)
 - [Supabase Documentation](https://supabase.com/docs)
-- [OpenAI API Keys](https://platform.openai.com/api-keys)
+- [Google Gemini API Keys](https://makersuite.google.com/app/apikey)
 

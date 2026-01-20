@@ -7,7 +7,10 @@ interface YourTeamCardProps {
   skills: string[];
   experience_years: number;
   availability: boolean;
-  onRemove: () => void;
+  onRemove?: () => void;
+  className?: string;
+  showRemoveButton?: boolean;
+  showSkills?: boolean;
 }
 
 export function YourTeamCard({
@@ -18,10 +21,13 @@ export function YourTeamCard({
   experience_years,
   availability,
   onRemove,
+  className = "",
+  showRemoveButton = true,
+  showSkills = true,
 }: YourTeamCardProps) {
   return (
     <div
-      className="rounded-2xl flex flex-col justify-end overflow-hidden relative group cursor-pointer w-full aspect-[3/4]"
+      className={`rounded-2xl flex flex-col justify-end overflow-hidden relative group cursor-pointer w-full aspect-[3/4] ${className}`}
     >
       {/* Background Image */}
       <img
@@ -40,15 +46,17 @@ export function YourTeamCard({
       />
 
       {/* Remove button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemove();
-        }}
-        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center transition-all duration-200 shadow-md z-10"
-      >
-        <X className="w-4 h-4 text-gray-700" />
-      </button>
+      {showRemoveButton && onRemove && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center transition-all duration-200 shadow-md z-10"
+        >
+          <X className="w-4 h-4 text-gray-700" />
+        </button>
+      )}
 
       {/* Content */}
       <div className="relative z-10 p-3">
@@ -61,21 +69,23 @@ export function YourTeamCard({
         </div>
 
         {/* Skills */}
-        <div className="flex flex-wrap gap-1">
-          {skills.slice(0, 2).map((skill, index) => (
-            <span
-              key={index}
-              className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/20 text-white font-light backdrop-blur-sm"
-            >
-              {skill}
-            </span>
-          ))}
-          {skills.length > 2 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/20 text-white font-light backdrop-blur-sm">
-              +{skills.length - 2}
-            </span>
-          )}
-        </div>
+        {showSkills && (
+          <div className="flex flex-wrap gap-1">
+            {skills.slice(0, 2).map((skill, index) => (
+              <span
+                key={index}
+                className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/20 text-white font-light backdrop-blur-sm"
+              >
+                {skill}
+              </span>
+            ))}
+            {skills.length > 2 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/20 text-white font-light backdrop-blur-sm">
+                +{skills.length - 2}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

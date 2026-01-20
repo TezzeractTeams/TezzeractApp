@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 import { supabase } from '../config/supabase.js';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   getGoogleOAuthUrl,
   getMetaOAuthUrl,
@@ -51,7 +51,7 @@ interface ChartDataPoint {
 // Get dashboard analytics
 export const getDashboardAnalytics = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -189,7 +189,7 @@ export const getDashboardAnalytics = async (req: AuthRequest, res: Response) => 
 // Get AI insights
 export const getAIInsights = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -305,7 +305,7 @@ export const getAIInsights = async (req: AuthRequest, res: Response) => {
 // Get connected platforms
 export const getConnectedPlatforms = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -362,7 +362,7 @@ export const getConnectedPlatforms = async (req: AuthRequest, res: Response) => 
 // Connect platform (OAuth initiation)
 export const connectPlatform = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -419,7 +419,7 @@ export const connectPlatform = async (req: AuthRequest, res: Response) => {
 // Disconnect platform
 export const disconnectPlatform = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -524,7 +524,7 @@ export const handleGoogleOAuthCallback = async (req: Request, res: Response) => 
 // Get Google Analytics properties
 export const getGoogleAnalyticsPropertiesList = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -540,7 +540,7 @@ export const getGoogleAnalyticsPropertiesList = async (req: AuthRequest, res: Re
 // Update Google Analytics property selection
 export const updateGoogleAnalyticsPropertySelection = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -1097,13 +1097,11 @@ export const getObjectives = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const userId = req.auth.userId;
-
     // Get user's organization first
     const { data: org } = await supabase
       .from('organizations')
       .select('id')
-      .eq('user_id', userId)
+      .eq('user_id', req.auth.userId)
       .maybeSingle();
 
     if (!org) {
@@ -1142,7 +1140,7 @@ export const getObjectives = async (req: AuthRequest, res: Response) => {
     // Transform to match frontend interface
     const transformed = (data || []).map((obj: any) => ({
       id: obj.id,
-      user_id: userId, // Map for frontend compatibility
+      user_id: req.auth.userId, // Map for frontend compatibility
       objective_type: mapDbTypeToFrontend(obj.type),
       description: obj.description,
       target_impressions: obj.target_metrics?.impressions || 0,
@@ -1184,7 +1182,6 @@ export const createObjective = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const userId = req.auth.userId;
     const { objective_type, description, target_impressions, target_reach, start_date, end_date } = req.body;
 
     if (!objective_type || !description || !start_date || !end_date) {
@@ -1197,7 +1194,7 @@ export const createObjective = async (req: AuthRequest, res: Response) => {
     const { data: org, error: orgError } = await supabase
       .from('organizations')
       .select('id')
-      .eq('user_id', userId)
+      .eq('user_id', req.auth.userId)
       .maybeSingle();
 
     if (orgError || !org) {
@@ -1254,7 +1251,7 @@ export const createObjective = async (req: AuthRequest, res: Response) => {
     // Transform response to match frontend interface
     const transformed = {
       id: data.id,
-      user_id: userId,
+      user_id: req.auth.userId,
       objective_type: mapDbTypeToFrontend(data.type),
       description: data.description,
       target_impressions: data.target_metrics?.impressions || 0,
@@ -1392,16 +1389,16 @@ export const getContentSuggestions = async (req: AuthRequest, res: Response) => 
       websiteContent = await fetchWebsiteContent(org.website);
     }
 
-    // Use OpenAI to generate content suggestions
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-    const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    // Use Gemini to generate content suggestions
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
-    if (!OPENAI_API_KEY) {
-      console.warn('OpenAI API key not configured');
+    if (!GEMINI_API_KEY) {
+      console.warn('Gemini API key not configured');
       return res.json({ suggestions: [] });
     }
 
-    const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+    const gemini = new GoogleGenerativeAI(GEMINI_API_KEY);
 
     // Build prompt with objectives and website content
     const objectivesText = objectives
@@ -1469,22 +1466,17 @@ Return ONLY a valid JSON array in this format:
 
 Do not include any markdown formatting or code blocks, just the raw JSON array.`;
 
-    const completion = await openai.chat.completions.create({
-      model: OPENAI_MODEL,
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a social media content strategist. Always respond with valid JSON arrays only.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
+    const model = gemini.getGenerativeModel({ 
+      model: GEMINI_MODEL,
+      generationConfig: {
+        temperature: 0.7,
+      },
     });
-
-    const aiContent = completion.choices[0]?.message?.content ?? '';
+    
+    const fullPrompt = `You are a social media content strategist. Always respond with valid JSON arrays only.\n\n${prompt}`;
+    const result = await model.generateContent(fullPrompt);
+    const response = await result.response;
+    const aiContent = response.text() ?? '';
     
     // Parse JSON response
     let suggestions: any[] = [];

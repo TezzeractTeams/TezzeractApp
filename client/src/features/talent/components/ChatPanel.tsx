@@ -1,9 +1,12 @@
 import { useRef, useEffect } from "react";
 import { Button } from "@/shared/components/ui/Button";
+import { TezzeractSendButton } from "@/shared/components/ui/TezzeractSendButton";
 import { Input } from "@/shared/components/ui/Input";
 import { ChatMessage } from "./ChatMessage";
-import { Loader2, Settings2, ArrowRight } from "lucide-react";
-import tezzeractIcon from "@/assets/images/tezzeract-icon.png";
+import { SuggestedSkillButton } from "./SuggestedSkillButton";
+import { Loader2, Settings2, ArrowRight, Sparkles, Trash2 } from "lucide-react";
+import TezzeractTextLogo from "@/assets/images/TezzeractTextLogo.png";
+import sparklesImage from "@/assets/images/sparkles.png";
 
 
 interface Talent {
@@ -19,6 +22,7 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  type?: "text" | "organization_form" | "company_size" | "login_button";
   talents?: Talent[];
   timestamp: Date;
 }
@@ -34,6 +38,8 @@ interface ChatPanelProps {
   suggestedSkills: string[];
   selectedSkillFilters: string[];
   onSkillFilterToggle: (skill: string) => void;
+  onLoginClick?: () => void;
+  onClearChat?: () => void;
 }
 
 export function ChatPanel({
@@ -47,6 +53,8 @@ export function ChatPanel({
   suggestedSkills,
   selectedSkillFilters,
   onSkillFilterToggle,
+  onLoginClick,
+  onClearChat,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,28 +75,55 @@ export function ChatPanel({
 
   if (hasUserMessage) {
     return (
-      <div className="flex flex-col h-full p-4 bg-white transition-all duration-300 ease-in-out rounded-3xl">
-        {/* Logo at top left */}
-        <div className="pb-8 flex items-center gap-2">
-          <img src={tezzeractIcon} alt="Tezzeract logo" className="w-10 h-10" />
+      <div className="flex flex-col h-full bg-[#FAFAFA] transition-all duration-300 ease-in-out rounded-3xl overflow-hidden relative">
+        {/* Logo at top left - overlaying the messages */}
+        <div 
+          className="absolute top-0 left-0 right-0 pl-8 pr-8 h-[112px] flex items-center justify-between gap-2 z-10"
+          style={{
+            background: 'linear-gradient(181.12deg, rgba(250, 250, 250, 1) 60%, rgba(250, 250, 250, 0.2) 100%)',
+            backdropFilter: 'blur(5px)',
+            WebkitBackdropFilter: 'blur(1px)'
+          }}
+        >
+          <img src={TezzeractTextLogo} alt="Tezzeract logo" className="h-4 z-100000" />
+          {onClearChat && (
+            <button
+              onClick={() => {
+                if (window.confirm('Are you sure you want to clear all chat history? This will remove all messages and reset the conversation.')) {
+                  onClearChat();
+                }
+              }}
+              className="p-2 rounded-lg hover:bg-gray-200 transition-colors duration-200 z-100000"
+              title="Clear chat history"
+            >
+              <Trash2 className="w-4 h-4 text-gray-600" />
+            </button>
+          )}
         </div>
-        
-        <div className="flex-1 overflow-y-auto scrollbar-hide">
+        <div className="px-4  z-0 flex-1 overflow-y-auto scrollbar-hide min-h-0 pt-[112px]">
           <div className="max-w-full mx-auto space-y-4">
             {messages.map((message) => (
-              <ChatMessage key={message.id} {...message} />
+              <ChatMessage key={message.id} {...message} onLoginClick={onLoginClick} />
             ))}
             {isLoading && (
-              <div className="flex gap-3 p-4 animate-fade-in">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-blue-800 to-blue-400 text-white">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                </div>
-                <div className="flex-1">
-                  <div className="bg-gray-100 text-gray-900 border border-gray-200 rounded-lg p-3">
-                    <p className="text-sm text-gray-600">
-                      TezzTalent is searching for top talents...
-                    </p>
-                  </div>
+              <div className="flex justify-start animate-fade-in">
+                <div className="flex items-center gap-2">
+                  <img 
+                    src={sparklesImage} 
+                    alt="Thinking" 
+                    className="w-4 h-4 animate-buffering"
+                  />
+                  <span 
+                    className="animate-buffering"
+                    style={{
+                      fontFamily: 'Figtree, system-ui, sans-serif',
+                      fontWeight: 400,
+                      fontSize: '14px',
+                      color: '#D4D4D8'
+                    }}
+                  >
+                    Thinking...
+                  </span>
                 </div>
               </div>
             )}
@@ -96,52 +131,52 @@ export function ChatPanel({
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-sm">
+        <div className="bg-white m-4 rounded-3xl shadow-sm">
           <div className="flex flex-col gap-4">
             {/* Search container with border */}
-            <div className="border border-blue-200 rounded-3xl p-4">
+            <div className="border border-[#E4E4E7] rounded-3xl ">
               <div className="flex flex-col gap-4">
-                {/* Search bar and send button */}
-                <div className="flex gap-2">
-                  <Input
-                    ref={inputRef}
-                    value={input}
-                    onChange={(e) => onInputChange(e.target.value)}
-                    onKeyPress={onKeyPress}
-                    placeholder="Describe your requirement..."
-                    className="flex-1 font-light !text-base bg-transparent border-0 rounded-lg px-4 py-4 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-0 h-12"
-                  />
-                  <Button
+                {/* Input field - full width on its own row */}
+                <Input
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => onInputChange(e.target.value)}
+                  onKeyPress={onKeyPress}
+                  placeholder="Describe your requirement..."
+                  className="w-full font-light !text-base bg-transparent border-0 rounded-lg px-4 py-4 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-0 min-h-[60px]"
+                />
+                
+                {/* Suggested buttons and send button on same row */}
+                <div className="flex border-[#E4E4E7] border rounded-3xl bg-[#F4F4F5] items-end gap-3 p-2 justify-between">
+                  {/* AI-suggested skill filter buttons */}
+                  {suggestedSkills.length > 0 ? (
+                    <div className="flex gap-3 overflow-x-auto scrollbar-hide relative flex-1">
+                      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
+                      {suggestedSkills.map((skill) => (
+                        <SuggestedSkillButton
+                          key={skill}
+                          skill={skill}
+                          isSelected={selectedSkillFilters.includes(skill)}
+                          isLoading={isLoading}
+                          onClick={() => onSkillFilterToggle(skill)}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex-1" />
+                  )}
+                  
+                  {/* Send button */}
+                  <TezzeractSendButton
                     onClick={onSendMessage}
                     disabled={!input.trim() || isLoading}
-                    className="rounded-2xl px-4 py-6 h-12 text-white hover:opacity-90 transition-all duration-200 bg-gradient-to-br from-blue-800 to-blue-400"
-                  >
-                    <ArrowRight className="w-6 h-6" />
-                  </Button>
+                    iconSize={20}
+                  />
                 </div>
-                
-                {/* AI-suggested skill filter buttons */}
-                {suggestedSkills.length > 0 && (
-                  <div className="flex gap-3 overflow-x-auto scrollbar-hide relative">
-                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
-                    {suggestedSkills.map((skill) => (
-                      <Button
-                        key={skill}
-                        onClick={() => onSkillFilterToggle(skill)}
-                        disabled={isLoading}
-                        className={`rounded-full px-6 py-2 font-medium transition-all duration-200 whitespace-nowrap ${
-                          selectedSkillFilters.includes(skill)
-                            ? 'bg-gradient-to-r from-blue-800 to-blue-400 text-white border-blue-500'
-                            : 'bg-white text-gray-600 border border-blue-400 hover:bg-blue-500 hover:text-white'
-                        }`}
-                      >
-                        {skill}
-                      </Button>
-                    ))}
-                  </div>
-                )}
               </div>
+          
             </div>
+            
           </div>
         </div>
       </div>

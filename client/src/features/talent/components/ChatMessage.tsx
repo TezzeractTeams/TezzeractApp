@@ -1,38 +1,108 @@
-import { Bot, User } from "lucide-react";
+import { useEffect } from "react";
+import { OrganizationBasicForm } from "./OrganizationBasicForm";
+import { OrganizationSizeForm } from "./OrganizationSizeForm";
+import { TezzeractButton } from "@/shared/components/ui/TezzeractButton";
+import { useAuth } from "@/shared/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useTeamStore } from "@/shared/stores/useTeamStore";
+import type { ChatMessage as ChatMessageType } from "@/shared/stores/useChatStore";
 
 interface ChatMessageProps {
   id: string;
   role: "user" | "assistant";
   content: string;
+  type?: "text" | "organization_form" | "company_size" | "login_button";
   timestamp: Date;
+  onLoginClick?: () => void;
 }
 
-export function ChatMessage({ role, content }: ChatMessageProps) {
+export function ChatMessage({ role, content, type = "text", onLoginClick }: ChatMessageProps) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { team } = useTeamStore();
+  
+  // Redirect to CreateMeetingPage if user is logged in and has team (for login_button type)
+  useEffect(() => {
+    if (type === 'login_button' && user && team.length > 0) {
+      const timer = setTimeout(() => {
+        navigate('/talent/create-meeting');
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [type, user, team.length, navigate]);
+  
+  // Render different content based on message type
+  const renderContent = () => {
+    switch (type) {
+      case "organization_form":
+        return <OrganizationBasicForm />;
+      case "company_size":
+        return <OrganizationSizeForm />;
+      case "login_button":
+        // Don't show login button if user is already logged in
+        if (user) {
+          // User is logged in, show success message
+          if (team.length > 0) {
+            return (
+              <div className="space-y-3">
+                <p className="whitespace-pre-wrap" style={{ color: '#27272A' }}>
+                  Great! You're already logged in. Redirecting to meeting setup...
+                </p>
+              </div>
+            );
+          }
+          return (
+            <div className="space-y-3">
+              <p className="whitespace-pre-wrap" style={{ color: '#27272A' }}>
+                You're already logged in! Continue with your team selection.
+              </p>
+            </div>
+          );
+        }
+        // User is not logged in, show login button
+        return (
+          <div className="space-y-3">
+            <p className="whitespace-pre-wrap" style={{ color: '#27272A' }}>
+              {content}
+            </p>
+            <TezzeractButton onClick={onLoginClick || (() => {})} fullWidth={false}>
+              Log in to Tezzeract
+            </TezzeractButton>
+          </div>
+        );
+      case "text":
+      default:
+        return (
+          <p className="whitespace-pre-wrap" style={{ color: '#27272A' }}>
+            {content}
+          </p>
+        );
+    }
+  };
+
+  const isFormType = type === 'organization_form' || type === 'company_size';
+  const maxWidth = role === 'assistant' 
+    ? (isFormType ? '95%' : '80%')
+    : undefined;
+
   return (
-    <div className={`flex gap-3 ${role === 'user' ? 'justify-end' : ''} animate-fade-in`}>
-      {role === 'assistant' && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-blue-800 to-blue-400 text-white">
-          <Bot className="w-4 h-4" />
-        </div>
-      )}
-      
-      <div className={`flex-1 max-w-[80%] ${role === 'user' ? 'ml-auto' : ''}`}>
+    <div className={`flex items-start animate-fade-in ${role === 'user' ? 'justify-end' : 'justify-start'}`}>
+      <div>
         <div
-          className={`rounded-lg p-3 ${
-            role === 'user'
-              ? 'bg-gradient-to-br from-blue-800 to-blue-400 text-white'
-              : 'bg-gray-100 text-gray-900 border border-gray-200'
-          }`}
+          className="p-3 inline-block"
+          style={{
+            fontFamily: 'Figtree, system-ui, sans-serif',
+            fontWeight: 400,
+            fontSize: '14px',
+            backgroundColor: role === 'user' ? '#F2F2F2' : 'white',
+            color: '#27272A',
+            borderRadius: '20px',
+            ...(maxWidth && { maxWidth })
+          }}
         >
-          <p className="text-sm whitespace-pre-wrap">{content}</p>
+          {renderContent()}
         </div>
       </div>
-      
-      {role === 'user' && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-gray-200 text-gray-700">
-          <User className="w-4 h-4" />
-        </div>
-      )}
     </div>
   );
 }

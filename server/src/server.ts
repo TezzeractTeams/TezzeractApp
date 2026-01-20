@@ -12,6 +12,7 @@ import socialRoutes from './routes/social.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import aiTalentSearchRoutes from './routes/aiTalentSearch.routes.js';
 import organizationRoutes from './routes/organization.routes.js';
+import meetingRoutes from './routes/meeting.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -40,6 +41,7 @@ app.use('/api/social', socialRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/ai', aiTalentSearchRoutes);
 app.use('/api/organization', organizationRoutes);
+app.use('/api/meeting', meetingRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
