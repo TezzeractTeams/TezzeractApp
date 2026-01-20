@@ -51,10 +51,10 @@ interface ChartDataPoint {
 // Get dashboard analytics
 export const getDashboardAnalytics = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth.userId;
-    if (!userId) {
+    if (!req.auth?.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    const userId = req.auth.userId;
 
     const { timeRange = '30d' } = req.query;
 
@@ -189,10 +189,10 @@ export const getDashboardAnalytics = async (req: AuthRequest, res: Response) => 
 // Get AI insights
 export const getAIInsights = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth.userId;
-    if (!userId) {
+    if (!req.auth?.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    const userId = req.auth.userId;
 
     const { timeRange = '30d' } = req.query;
 
@@ -305,10 +305,10 @@ export const getAIInsights = async (req: AuthRequest, res: Response) => {
 // Get connected platforms
 export const getConnectedPlatforms = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth.userId;
-    if (!userId) {
+    if (!req.auth?.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    const userId = req.auth.userId;
 
     // Define available platforms
     const availablePlatforms = [
@@ -362,10 +362,10 @@ export const getConnectedPlatforms = async (req: AuthRequest, res: Response) => 
 // Connect platform (OAuth initiation)
 export const connectPlatform = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth.userId;
-    if (!userId) {
+    if (!req.auth?.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    const userId = req.auth.userId;
 
     const { platform } = req.params;
 
@@ -419,10 +419,10 @@ export const connectPlatform = async (req: AuthRequest, res: Response) => {
 // Disconnect platform
 export const disconnectPlatform = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth.userId;
-    if (!userId) {
+    if (!req.auth?.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    const userId = req.auth.userId;
 
     const { platform } = req.params;
 
@@ -524,10 +524,10 @@ export const handleGoogleOAuthCallback = async (req: Request, res: Response) => 
 // Get Google Analytics properties
 export const getGoogleAnalyticsPropertiesList = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth.userId;
-    if (!userId) {
+    if (!req.auth?.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    const userId = req.auth.userId;
 
     const properties = await getGoogleAnalyticsProperties(userId);
     res.json({ properties });
@@ -540,10 +540,10 @@ export const getGoogleAnalyticsPropertiesList = async (req: AuthRequest, res: Re
 // Update Google Analytics property selection
 export const updateGoogleAnalyticsPropertySelection = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.auth.userId;
-    if (!userId) {
+    if (!req.auth?.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    const userId = req.auth.userId;
 
     const { propertyId, propertyName } = req.body;
 
@@ -1096,12 +1096,13 @@ export const getObjectives = async (req: AuthRequest, res: Response) => {
     if (!req.auth?.userId) {
       return res.status(401).json({ error: 'Authentication required' });
     }
+    const userId = req.auth.userId;
 
     // Get user's organization first
     const { data: org } = await supabase
       .from('organizations')
       .select('id')
-      .eq('user_id', req.auth.userId)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (!org) {
@@ -1140,7 +1141,7 @@ export const getObjectives = async (req: AuthRequest, res: Response) => {
     // Transform to match frontend interface
     const transformed = (data || []).map((obj: any) => ({
       id: obj.id,
-      user_id: req.auth.userId, // Map for frontend compatibility
+      user_id: userId, // Map for frontend compatibility
       objective_type: mapDbTypeToFrontend(obj.type),
       description: obj.description,
       target_impressions: obj.target_metrics?.impressions || 0,

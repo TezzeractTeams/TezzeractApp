@@ -84,7 +84,7 @@ export const bookMeeting = async (req: Request, res: Response) => {
       body: JSON.stringify(calRequestBody),
     });
 
-    const responseData = await response.json();
+    const responseData = await response.json() as { message?: string; [key: string]: any };
 
     if (!response.ok) {
       console.error('Cal.com API error:', responseData);
