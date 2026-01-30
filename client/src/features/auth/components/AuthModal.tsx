@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "@/shared/contexts/AuthContext";
 import { useTeamStore } from "@/shared/stores/useTeamStore";
+import { supabase } from "@/shared/lib/supabase";
 import { Button } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/ui/Input";
 
@@ -15,18 +16,27 @@ interface AuthModalProps {
 export default function AuthModal({ isOpen, onClose, initialMode = "signin" }: AuthModalProps) {
   const navigate = useNavigate();
   const { team } = useTeamStore();
-  const [isSignUp, setIsSignUp] = useState(initialMode === "signup");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [authFormLoading, setAuthFormLoading] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const { signIn, signUp, signInWithGoogle, user } = useAuth();
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const { user } = useAuth();
+
+  // Handle animation states
+  useEffect(() => {
+    if (isOpen) {
+      setIsAnimating(true);
+    } else {
+      // Delay unmounting to allow exit animation
+      const timer = setTimeout(() => setIsAnimating(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
   // Redirect to CreateMeetingPage after successful login if team exists
   useEffect(() => {
     if (user && team.length > 0 && isOpen) {
-      // User just logged in and has a team, redirect to CreateMeetingPage
       onClose();
       setTimeout(() => {
         navigate('/talent/create-meeting');
@@ -34,188 +44,265 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signin" }: A
     }
   }, [user, team.length, isOpen, navigate, onClose]);
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setAuthFormLoading(true);
-    setAuthError(null);
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const { error } = isSignUp 
-        ? await signUp(email, password, fullName)
-        : await signIn(email, password);
-
+      // Use magic link (passwordless) authentication
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+      
       if (error) {
-        setAuthError(error.message);
+        setError(error.message);
       } else {
-        onClose();
-        setEmail("");
-        setPassword("");
-        setFullName("");
-        if (isSignUp) {
-          toast.success("Account created! Please check your email to verify your account.");
-        }
+        setEmailSent(true);
+        toast.success("Check your email for the sign-in link!");
       }
     } catch (error: any) {
-      setAuthError(error.message || "An error occurred");
+      setError(error.message || "An error occurred");
     } finally {
-      setAuthFormLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setAuthFormLoading(true);
-    setAuthError(null);
+  const handleLinkedInSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      await signInWithGoogle();
-      onClose();
+      // TODO: Implement LinkedIn OAuth
+      // For now, show a message
+      toast.error("LinkedIn sign-in coming soon!");
+      setIsLoading(false);
     } catch (error: any) {
-      setAuthError(error.message || "Google sign-in failed");
-      setAuthFormLoading(false);
+      setError(error.message || "LinkedIn sign-in failed");
+      setIsLoading(false);
     }
   };
 
-  const toggleMode = () => {
-    setIsSignUp(!isSignUp);
-    setAuthError(null);
-  };
-
-  if (!isOpen) return null;
+  if (!isOpen && !isAnimating) return null;
 
   return (
-    <div 
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" 
-      onClick={onClose}
-    >
+    <>
+      {/* Backdrop */}
       <div 
-        className="bg-[#1a1a1a] rounded-xl p-8 max-w-md w-full mx-4 border border-white/20" 
+        className={`fixed inset-0 bg-black/30 z-40 transition-opacity duration-500 ease-in-out ${
+          isOpen ? 'opacity-100' : 'opacity-0'
+        }`}
+        onClick={onClose}
+      />
+      
+      {/* Slide Panel */}
+      <div 
+        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white z-50 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform ${
+          isOpen 
+            ? 'translate-x-0 opacity-100' 
+            : 'translate-x-full opacity-0'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-2xl text-white mb-4 font-light">
-          {isSignUp ? "Sign Up" : "Sign In"}
-        </h2>
-        
-        <form onSubmit={handleAuth} className="space-y-4">
-          {isSignUp && (
-            <div>
-              <Input
-                type="text"
-                placeholder="Full Name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required={isSignUp}
-                className="bg-white/10 text-white border-white/20 placeholder:text-white/50"
-              />
-            </div>
-          )}
-          
-          <div>
-            <Input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="bg-white/10 text-white border-white/20 placeholder:text-white/50"
-            />
-          </div>
-          
-          <div>
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="bg-white/10 text-white border-white/20 placeholder:text-white/50"
-            />
-          </div>
-          
-          {authError && (
-            <div className="text-red-400 text-sm">{authError}</div>
-          )}
-          
-          {/* Google Sign In Button */}
-          <Button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={authFormLoading}
-            className="w-full border border-white/20 bg-transparent text-white hover:bg-white/10 flex items-center justify-center gap-2 h-10 px-4 py-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-800 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+        <div className="h-full flex flex-col p-8">
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className={`absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-all duration-300 delay-100 ${
+              isOpen 
+                ? 'opacity-100 rotate-0 scale-100' 
+                : 'opacity-0 rotate-90 scale-75'
+            }`}
+            aria-label="Close"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
-                fill="currentColor"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="currentColor"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
               />
             </svg>
-            Continue with Google
-          </Button>
-          
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/20"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-[#1a1a1a] text-white/70">Or continue with email</span>
-            </div>
-          </div>
-          
-          <div className="flex gap-4">
-            <Button
-              type="submit"
-              disabled={authFormLoading}
-              className="flex-1 bg-gradient-to-r from-blue-800 to-blue-400 text-white"
+          </button>
+
+          {/* Content */}
+          <div 
+            className={`flex-1 flex flex-col justify-center transition-all duration-700 delay-100 ${
+              isOpen 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-4'
+            }`}
+          >
+            <h1 
+              className={`text-3xl font-semibold text-gray-900 mb-2 transition-all duration-500 delay-150 ${
+                isOpen 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 translate-y-2'
+              }`}
             >
-              {authFormLoading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
-            </Button>
-            <Button
-              type="button"
-              onClick={onClose}
-              className="border border-white/20 bg-transparent text-white hover:bg-white/10 h-10 px-4 py-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-800 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+              Create an account
+            </h1>
+            <p 
+              className={`text-gray-500 mb-8 transition-all duration-500 delay-200 ${
+                isOpen 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 translate-y-2'
+              }`}
             >
-              Cancel
-            </Button>
-          </div>
-          
-          <div className="text-center text-white/70 text-sm">
-            {isSignUp ? (
-              <span>
-                Already have an account?{" "}
-                <button
-                  type="button"
-                  onClick={toggleMode}
-                  className="text-blue-400 hover:underline"
+              Enter your email below to create your account
+            </p>
+
+            <form 
+              onSubmit={handleEmailSignIn} 
+              className={`space-y-6 transition-all duration-500 delay-300 ${
+                isOpen 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 translate-y-4'
+              }`}
+            >
+              {/* Email Input */}
+              <div 
+                className={`transition-all duration-500 delay-350 ${
+                  isOpen 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 translate-y-2'
+                }`}
+              >
+                <Input
+                  type="email"
+                  placeholder="example@mail.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading || emailSent}
+                  className="w-full h-12 text-base transition-all duration-200 focus:scale-[1.02]"
+                />
+              </div>
+
+              {error && (
+                <div 
+                  className={`text-red-500 text-sm transition-all duration-300 ${
+                    isOpen 
+                      ? 'opacity-100 translate-y-0' 
+                      : 'opacity-0 translate-y-2'
+                  }`}
                 >
-                  Sign In
-                </button>
-              </span>
-            ) : (
-              <span>
-                Don't have an account?{" "}
-                <button
-                  type="button"
-                  onClick={toggleMode}
-                  className="text-blue-400 hover:underline"
+                  {error}
+                </div>
+              )}
+
+              {emailSent && (
+                <div 
+                  className={`text-green-600 text-sm bg-green-50 p-3 rounded-md transition-all duration-300 ${
+                    isOpen 
+                      ? 'opacity-100 translate-y-0' 
+                      : 'opacity-0 translate-y-2'
+                  }`}
                 >
-                  Sign Up
-                </button>
-              </span>
-            )}
+                  Check your email! We've sent you a sign-in link.
+                </div>
+              )}
+
+              {/* Sign In with Email Button */}
+              <div
+                className={`transition-all duration-500 delay-400 ${
+                  isOpen 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 translate-y-2'
+                }`}
+              >
+                <Button
+                  type="submit"
+                  disabled={isLoading || emailSent}
+                  className="w-full h-12 text-base font-medium bg-gradient-to-b from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  {isLoading ? "Sending..." : emailSent ? "Email Sent!" : "Sign In with Email"}
+                </Button>
+              </div>
+
+              {/* Divider */}
+              <div 
+                className={`relative transition-all duration-500 delay-450 ${
+                  isOpen 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 translate-y-2'
+                }`}
+              >
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500 uppercase tracking-wide">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+
+              {/* LinkedIn Button */}
+              <div
+                className={`transition-all duration-500 delay-500 ${
+                  isOpen 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 translate-y-2'
+                }`}
+              >
+                <Button
+                  type="button"
+                  onClick={handleLinkedInSignIn}
+                  disabled={isLoading}
+                  className="w-full h-12 text-base font-medium bg-[#0077B5] hover:bg-[#006399] text-white shadow-md flex items-center justify-center gap-2 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+                >
+                <svg
+                  className="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                </svg>
+                LinkedIn
+              </Button>
+              </div>
+            </form>
           </div>
-        </form>
+
+          {/* Footer */}
+          <div 
+            className={`mt-8 text-center text-sm text-gray-500 transition-all duration-500 delay-600 ${
+              isOpen 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-2'
+            }`}
+          >
+            By clicking continue, you agree to our{" "}
+            <a
+              href="/terms"
+              className="text-gray-700 hover:text-gray-900 underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a
+              href="/privacy"
+              className="text-gray-700 hover:text-gray-900 underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy
+            </a>
+            .
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
