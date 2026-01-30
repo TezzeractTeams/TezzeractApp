@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/shared/contexts/AuthContext";
 import { useTeamStore } from "@/shared/stores/useTeamStore";
@@ -14,6 +14,7 @@ import { TezzeractButton } from "@/shared/components/ui/TezzeractButton";
 import { Plus, Check, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/shared/utils/cn";
 import { bookMeeting } from "@/shared/services/meetingService";
+import AuthModal from "@/features/auth/components/AuthModal";
 
 interface OrganizationFormData {
   organizationName: string;
@@ -94,6 +95,7 @@ export default function CreateMeetingPage() {
     setSelectedSkillFilters,
     toggleSkillFilter,
     clearAll,
+    removeMessagesByType,
   } = useChatStoreHydrated();
   const { organization, organizationName, industry, basedIn, companySize, setCompanySize, setForm1Data, currentStep, setCurrentStep } = useOrganizationStore();
   const { sendTalentChat } = useChatService();
@@ -108,6 +110,9 @@ export default function CreateMeetingPage() {
   const [dateSectionExpanded, setDateSectionExpanded] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [pendingBooking, setPendingBooking] = useState<{ orgData: typeof orgData; selectedTime: typeof selectedTime; colleagues: typeof colleagues } | null>(null);
+  const lastProcessedStepRef = useRef<string | null>(null);
   
   // Auto-fill organization data from store (editable)
   const [orgData, setOrgData] = useState({
@@ -142,6 +147,7 @@ export default function CreateMeetingPage() {
   // This ensures the form is visible when user navigates here with a team
   useEffect(() => {
     if (team.length > 0) {
+      console.log('[CreateMeetingPage] Team selected, showing form', { teamLength: team.length });
       setShowForm(true);
     }
   }, [team.length]);
@@ -200,7 +206,6 @@ export default function CreateMeetingPage() {
 
       // Check if AI wants to show organization form
       const shouldShowForm = (response as any).showOrganizationForm || false;
-      const showBothForms = (response as any).showBothForms || false;
       
       // Create AI response message (only if we didn't already show polite message)
       const aiResponse: ChatMessage = {
@@ -236,7 +241,7 @@ export default function CreateMeetingPage() {
 
       // Handle organization form flow
       if (shouldShowForm) {
-        console.log('[CreateMeetingPage] Showing organization form:', { shouldShowForm, showBothForms });
+        console.log('[CreateMeetingPage] Showing organization form');
         setShowForm(true);
         
         // Message: Introduction text
@@ -249,38 +254,17 @@ export default function CreateMeetingPage() {
         };
         addMessage(introMessage);
 
-        if (showBothForms) {
-          // Show both forms instantly (user requested all forms at once)
-          console.log('[CreateMeetingPage] Showing both forms instantly');
-          const formMessage1: ChatMessage = {
-            id: (Date.now() + 3).toString(),
-            role: "assistant",
-            type: "organization_form",
-            content: "",
-            timestamp: new Date(),
-          };
-          const formMessage2: ChatMessage = {
-            id: (Date.now() + 4).toString(),
-            role: "assistant",
-            type: "company_size",
-            content: "Company size?",
-            timestamp: new Date(),
-          };
-          addMessage(formMessage1);
-          addMessage(formMessage2);
-        } else {
-          // Normal flow: Show form 1 first, form 2 will appear after submission
-          console.log('[CreateMeetingPage] Showing form 1 only (normal flow)');
-          const formMessage: ChatMessage = {
-            id: (Date.now() + 3).toString(),
-            role: "assistant",
-            type: "organization_form",
-            content: "",
-            timestamp: new Date(),
-          };
-          addMessage(formMessage);
-          setCurrentStep('form1');
-        }
+        // Normal flow: Show form 1 first, form 2 will appear after submission
+        console.log('[CreateMeetingPage] Showing form 1 only (normal flow)');
+        const formMessage: ChatMessage = {
+          id: (Date.now() + 3).toString(),
+          role: "assistant",
+          type: "organization_form",
+          content: "",
+          timestamp: new Date(),
+        };
+        addMessage(formMessage);
+        setCurrentStep('form1');
       }
     } catch (error) {
       console.error('AI chat error:', error);
@@ -315,7 +299,7 @@ export default function CreateMeetingPage() {
 
   // Watch for organization form flow step changes
   useEffect(() => {
-    if (currentStep === 'form2') {
+    if (currentStep === 'form2' && lastProcessedStepRef.current !== 'form2') {
       // Form 1 submitted, show company size message
       const companySizeMessage: ChatMessage = {
         id: Date.now().toString(),
@@ -325,11 +309,89 @@ export default function CreateMeetingPage() {
         timestamp: new Date(),
       };
       addMessage(companySizeMessage);
-    } else if (currentStep === 'completed') {
+      lastProcessedStepRef.current = 'form2';
+    } else if (currentStep === 'completed' && lastProcessedStepRef.current !== 'completed') {
       // Form 2 submitted, form is ready
       setShowForm(true);
+      lastProcessedStepRef.current = 'completed';
+      
+      // If user is not logged in, show login message
+      if (!user) {
+        const hasLoginMessage = messages.some((m) => m.type === 'login_button');
+        if (!hasLoginMessage) {
+          const loginMessage: ChatMessage = {
+            id: Date.now().toString(),
+            role: "assistant",
+            type: "login_button",
+            content: "Great! Now let's get onboard. We need you to log into your Tezzeract account. Create your account here so I can log you in.",
+            timestamp: new Date(),
+          };
+          addMessage(loginMessage);
+        }
+      }
     }
-  }, [currentStep, addMessage]);
+  }, [currentStep, addMessage, user, messages]);
+  
+  // Watch for user login - remove login messages and proceed with booking if pending
+  useEffect(() => {
+    if (user) {
+      // Remove login_button messages when user logs in
+      removeMessagesByType('login_button');
+      
+      if (pendingBooking) {
+        console.log('[CreateMeetingPage] User logged in, proceeding with pending booking');
+        // User just logged in and has pending booking, proceed with booking
+        const proceedWithBooking = async () => {
+        setIsBooking(true);
+        try {
+          const { orgData: pendingOrgData, selectedTime: pendingSelectedTime, colleagues: pendingColleagues } = pendingBooking;
+          
+          // Get user's timezone (default to UTC if not available)
+          const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+          
+          // Format the selected time as ISO 8601
+          const startTime = pendingSelectedTime!.datetime.toISOString();
+          
+          // Get guest emails from colleagues
+          const guestEmails = pendingColleagues
+            .filter((c) => c.email && c.email.trim())
+            .map((c) => c.email.trim());
+
+          // Prepare meeting booking request
+          const meetingRequest = {
+            start: startTime,
+            attendee: {
+              name: userName,
+              email: user.email!,
+              timeZone: timeZone,
+            },
+            eventTypeSlug: '30min',
+            username: 'tezzearct',
+            guests: guestEmails.length > 0 ? guestEmails : undefined,
+            metadata: {
+              organization: (pendingOrgData.name || "").substring(0, 500),
+              industry: (pendingOrgData.industry || "").substring(0, 500),
+              basedIn: (pendingOrgData.basedIn || "").substring(0, 500),
+              companySize: (pendingOrgData.companySize || "").substring(0, 500),
+              teamMembers: JSON.stringify(team.map((m) => ({ id: m.id, name: m.name }))).substring(0, 500),
+            },
+          };
+
+          const result = await bookMeeting(meetingRequest);
+          alert(`Meeting booked successfully! ${result.message}`);
+          setPendingBooking(null);
+        } catch (error: any) {
+          console.error('Error booking meeting:', error);
+          alert(`Failed to book meeting: ${error.message || 'Unknown error'}`);
+        } finally {
+          setIsBooking(false);
+        }
+      };
+      
+      proceedWithBooking();
+      }
+    }
+  }, [user, pendingBooking, userName, team, removeMessagesByType]);
   
   const handleCompanySizeSelect = (size: string) => {
     setCompanySize(size);
@@ -351,6 +413,7 @@ export default function CreateMeetingPage() {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[CreateMeetingPage] Submit button clicked', { orgData, selectedTime, user: user?.email, team: team.length });
     
     // Basic validation
     if (!orgData.name.trim()) {
@@ -361,11 +424,28 @@ export default function CreateMeetingPage() {
       alert("Please select a meeting time");
       return;
     }
+    
+    // If user is not logged in, save form data and show login message
     if (!user?.email) {
-      alert("User email is required");
+      console.log('[CreateMeetingPage] User not logged in, saving form data and showing login message');
+      setPendingBooking({ orgData, selectedTime, colleagues });
+      
+      // Check if login message already exists
+      const hasLoginMessage = messages.some((m) => m.type === 'login_button');
+      if (!hasLoginMessage) {
+        const loginMessage: ChatMessage = {
+          id: Date.now().toString(),
+          role: "assistant",
+          type: "login_button",
+          content: "Great! Now let's get onboard. We need you to log into your Tezzeract account. Create your account here so I can log you in.",
+          timestamp: new Date(),
+        };
+        addMessage(loginMessage);
+      }
       return;
     }
 
+    console.log('[CreateMeetingPage] Validation passed, starting booking...');
     setIsBooking(true);
     
     try {
@@ -433,6 +513,7 @@ export default function CreateMeetingPage() {
             selectedSkillFilters={selectedSkillFilters}
             onSkillFilterToggle={handleSkillFilterToggle}
             onClearChat={handleClearChat}
+            onLoginClick={() => setIsAuthModalOpen(true)}
           />
         </div>
         
@@ -442,7 +523,7 @@ export default function CreateMeetingPage() {
             {/* Welcome Header */}
             <h1 className="text-3xl pt-6 font-light text-gray-900 mb-2">
                 Hello {userName}, welcome to Tezzeract!
-              </h1>
+            </h1>
             <div className="p-4 bg-white rounded-3xl w-fit">
               
               {/* Your Team Section */}
@@ -473,8 +554,8 @@ export default function CreateMeetingPage() {
           
             
             {/* Organization and Date/Time Sections */}
-            {showForm && (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            {(showForm || team.length > 0) && (
+            <form id="meeting-form" onSubmit={handleSubmit} className="space-y-6">
               {/* Both sections side by side */}
               <div className="flex gap-6 flex-col items-center">
                 {/* Section 1: Let us know more about your organization */}
@@ -634,7 +715,12 @@ export default function CreateMeetingPage() {
           
               {/* Submit Button */}
               <div className="flex justify-end pt-4 pr-4">
-                <TezzeractButton type="submit" fullWidth={false} className="w-[200px]" disabled={isBooking}>
+                <TezzeractButton 
+                  type="submit" 
+                  fullWidth={false} 
+                  className="w-[200px]" 
+                  disabled={isBooking}
+                >
                   {isBooking ? "Booking..." : "Book a call"}
                 </TezzeractButton>
               </div>
@@ -643,6 +729,12 @@ export default function CreateMeetingPage() {
           </div>
         </div>
       </div>
+      
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode="signin"
+      />
     </div>
   );
 }

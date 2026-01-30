@@ -7,6 +7,7 @@ import { SuggestedSkillButton } from "./SuggestedSkillButton";
 import { Loader2, Settings2, ArrowRight, Sparkles, Trash2 } from "lucide-react";
 import TezzeractTextLogo from "@/assets/images/TezzeractTextLogo.png";
 import sparklesImage from "@/assets/images/sparkles.png";
+import { useAuth } from "@/shared/contexts/AuthContext";
 
 
 interface Talent {
@@ -58,6 +59,12 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+  
+  // Filter out login_button messages if user is logged in
+  const filteredMessages = user 
+    ? messages.filter((msg) => msg.type !== 'login_button')
+    : messages;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -72,6 +79,21 @@ export function ChatPanel({
       inputRef.current.focus();
     }
   }, [isLoading]);
+
+  // Focus input when switching back to welcome screen (after clearing history)
+  useEffect(() => {
+    if (!hasUserMessage && !isLoading && inputRef.current) {
+      // Small delay to ensure the DOM has updated
+      const timer = setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          // Ensure input is clickable by removing any potential disabled state
+          inputRef.current.disabled = false;
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [hasUserMessage, isLoading]);
 
   if (hasUserMessage) {
     return (
@@ -102,7 +124,7 @@ export function ChatPanel({
         </div>
         <div className="px-4  z-0 flex-1 overflow-y-auto scrollbar-hide min-h-0 pt-[112px]">
           <div className="max-w-full mx-auto space-y-4">
-            {messages.map((message) => (
+            {filteredMessages.map((message) => (
               <ChatMessage key={message.id} {...message} onLoginClick={onLoginClick} />
             ))}
             {isLoading && (
@@ -144,6 +166,8 @@ export function ChatPanel({
                   onKeyPress={onKeyPress}
                   placeholder="Describe your requirement..."
                   className="w-full font-light !text-base bg-transparent border-0 rounded-lg px-4 py-4 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-0 min-h-[60px]"
+                  disabled={isLoading}
+                  style={{ pointerEvents: isLoading ? 'none' : 'auto' }}
                 />
                 
                 {/* Suggested buttons and send button on same row */}
@@ -200,6 +224,8 @@ export function ChatPanel({
               onKeyPress={onKeyPress}
               placeholder="Start searching your dream team...."
               className="bg-gray-50 text-gray-900 placeholder-gray-400 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              disabled={isLoading}
+              style={{ pointerEvents: isLoading ? 'none' : 'auto' }}
             />
             <div className="flex flex-row p-2 rounded-lg gap-2">
               <Button

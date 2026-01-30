@@ -31,6 +31,7 @@ export default function TalentPage() {
   const [isFetchingTalents, setIsFetchingTalents] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const hasProcessedInitialQueryRef = useRef(false);
+  const lastProcessedStepRef = useRef<string | null>(null);
   
   // Use Zustand stores (hydrated to ensure Date objects)
   const {
@@ -48,6 +49,7 @@ export default function TalentPage() {
     setSelectedSkillFilters,
     setRecommendedTalents,
     toggleSkillFilter,
+    removeMessagesByType,
     clearAll,
   } = useChatStoreHydrated();
   
@@ -242,41 +244,85 @@ export default function TalentPage() {
 
   // Watch for organization form flow step changes
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/0b0f08c3-d177-414e-9c2d-ee1698ed7d28',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TalentPage.tsx:245',message:'useEffect triggered',data:{currentStep,lastProcessedStep:lastProcessedStepRef.current,user:!!user},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    
+    // Skip if we've already processed this step
+    if (lastProcessedStepRef.current === currentStep) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/0b0f08c3-d177-414e-9c2d-ee1698ed7d28',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TalentPage.tsx:250',message:'skipping already processed step',data:{currentStep},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      return;
+    }
+    
     if (currentStep === 'form2') {
-      // Form 1 submitted, show company size message
-      const companySizeMessage: ChatMessage = {
-        id: Date.now().toString(),
-        role: "assistant",
-        type: "company_size",
-        content: "Company size?",
-        timestamp: new Date(),
-      };
-      addMessage(companySizeMessage);
-    } else if (currentStep === 'completed') {
-      // Form 2 submitted
-      if (user) {
-        // User is already logged in, redirect to CreateMeetingPage
-        navigate('/talent/create-meeting');
-      } else {
-        // User is not logged in, show login button message
-        const loginMessage: ChatMessage = {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/0b0f08c3-d177-414e-9c2d-ee1698ed7d28',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TalentPage.tsx:253',message:'form2 branch entered',data:{hasCompanySizeMsg:messages.some(m=>m.type==='company_size')},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      // Check if company_size message already exists before adding
+      const hasCompanySizeMessage = messages.some((msg) => msg.type === 'company_size');
+      if (!hasCompanySizeMessage) {
+        // Form 1 submitted, show company size message
+        const companySizeMessage: ChatMessage = {
           id: Date.now().toString(),
           role: "assistant",
-          type: "login_button",
-          content: "Great! Now let's get onboard. We need you to log into your Tezzeract account. Create your account here so I can log you in.",
+          type: "company_size",
+          content: "Company size?",
           timestamp: new Date(),
         };
-        addMessage(loginMessage);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/0b0f08c3-d177-414e-9c2d-ee1698ed7d28',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TalentPage.tsx:264',message:'calling addMessage for company_size',data:{messageId:companySizeMessage.id},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        addMessage(companySizeMessage);
       }
+      lastProcessedStepRef.current = currentStep;
+    } else if (currentStep === 'completed') {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/0b0f08c3-d177-414e-9c2d-ee1698ed7d28',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TalentPage.tsx:272',message:'completed branch entered',data:{user:!!user,hasLoginMsg:messages.some(m=>m.type==='login_button')},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+      // Form 2 submitted
+      if (user) {
+        // User is already logged in, remove any existing login_button messages and redirect
+        removeMessagesByType('login_button');
+        navigate('/talent/create-meeting');
+      } else {
+        // User is not logged in, check if login message already exists
+        const hasLoginMessage = messages.some((msg) => msg.type === 'login_button');
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/0b0f08c3-d177-414e-9c2d-ee1698ed7d28',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TalentPage.tsx:280',message:'checking hasLoginMessage',data:{hasLoginMessage},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
+        if (!hasLoginMessage) {
+          // Only add login button message if one doesn't already exist
+          const loginMessage: ChatMessage = {
+            id: Date.now().toString(),
+            role: "assistant",
+            type: "login_button",
+            content: "Great! Now let's get onboard. We need you to log into your Tezzeract account. Create your account here so I can log you in.",
+            timestamp: new Date(),
+          };
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/0b0f08c3-d177-414e-9c2d-ee1698ed7d28',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TalentPage.tsx:290',message:'calling addMessage for login_button',data:{messageId:loginMessage.id},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+          // #endregion
+          addMessage(loginMessage);
+        }
+      }
+      lastProcessedStepRef.current = currentStep;
     }
-  }, [currentStep, addMessage, user, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep, addMessage, user, navigate, removeMessagesByType]);
   
   // Watch for auth changes - if user logs in after form completion, redirect to CreateMeetingPage
   useEffect(() => {
     if (user && currentStep === 'completed' && yourTeam.length > 0) {
+      // Remove login_button messages when user logs in
+      removeMessagesByType('login_button');
       navigate('/talent/create-meeting');
+    } else if (user) {
+      // If user logs in at any point, remove any login_button messages
+      removeMessagesByType('login_button');
     }
-  }, [user, currentStep, yourTeam.length, navigate]);
+  }, [user, currentStep, yourTeam.length, navigate, removeMessagesByType]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -333,7 +379,9 @@ export default function TalentPage() {
 
         {/* AI Selected Talents */}
         <div className="flex-1 transition-all rounded-3xl duration-300 ease-out flex flex-col py-4 ">
-          <h1 className="text-[#27272A] text-xl font-light mb-4 flex-shrink-0">This is the best team for you</h1>
+          {filteredTalents.length > 0 && (
+            <h1 className="text-[#27272A] text-xl font-light mb-4 flex-shrink-0">This is the best team for you</h1>
+          )}
           <div className="flex-1 min-h-0">
             <AvailableTalents
               talents={filteredTalents}

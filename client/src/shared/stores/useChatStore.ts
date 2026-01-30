@@ -35,6 +35,7 @@ interface ChatStore {
   setRecommendedTalents: (talents: any[]) => void;
   toggleSkillFilter: (skill: string) => void;
   clearMessages: () => void;
+  removeMessagesByType: (type: ChatMessage['type']) => void;
   clearAll: () => void; // Clear all chat state including messages, skills, talents, etc.
 }
 
@@ -57,12 +58,17 @@ export const useChatStore = create<ChatStore>()(
         set({ messages: normalizedMessages });
       },
       
-      addMessage: (message) => set((state) => ({
-        messages: [...state.messages, {
-          ...message,
-          timestamp: message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp),
-        }],
-      })),
+      addMessage: (message) => set((state) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/0b0f08c3-d177-414e-9c2d-ee1698ed7d28',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useChatStore.ts:61',message:'addMessage called',data:{messageId:message.id,messageType:message.type,stateMessagesLength:state.messages.length,willHaveDuplicateId:state.messages.some(m=>m.id===message.id)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        return {
+          messages: [...state.messages, {
+            ...message,
+            timestamp: message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp),
+          }],
+        };
+      }),
       
       setInput: (input) => set({ input }),
       
@@ -82,6 +88,10 @@ export const useChatStore = create<ChatStore>()(
       }),
       
       clearMessages: () => set({ messages: [INITIAL_MESSAGE] }),
+      
+      removeMessagesByType: (type) => set((state) => ({
+        messages: state.messages.filter((msg) => msg.type !== type),
+      })),
       
       clearAll: () => set({
         messages: [INITIAL_MESSAGE],
