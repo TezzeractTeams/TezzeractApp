@@ -74,7 +74,12 @@ function DashboardTabContent({
               key={range.value}
               variant={selectedTimeRange === range.value ? 'gradient' : 'outline'}
               size="sm"
-              onClick={() => setSelectedTimeRange(range.value)}
+              onClick={() => {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/0b0f08c3-d177-414e-9c2d-ee1698ed7d28',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DashboardPage.tsx:timeRangeClick',message:'Time range button clicked',data:{range:range.value},hypothesisId:'H2',timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
+                setSelectedTimeRange(range.value);
+              }}
             >
               {range.label}
             </Button>

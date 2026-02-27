@@ -48,21 +48,38 @@ export default function ContentCalendarPage() {
   const [posting, setPosting] = useState(false);
   const [connectedPlatforms, setConnectedPlatforms] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    const fetchCalendar = async () => {
-      try {
-        const data = await getContentCalendar(currentMonth + 1, currentYear);
-        setPosts(data.posts);
-      } catch (error) {
-        console.error('Failed to fetch calendar:', error);
-      } finally {
-        setLoading(false);
+  // Fetch all posts; on initial load, navigate to month of earliest scheduled post
+  const fetchAllPosts = async (setViewToEarliest = false) => {
+    try {
+      const data = await getContentCalendar(); // No params = fetch all posts
+      setPosts(data.posts);
+      if (setViewToEarliest && data.posts.length > 0) {
+        const earliestDate = data.posts.reduce((earliest, post) => {
+          const d = typeof post.scheduledFor === 'string' ? new Date(post.scheduledFor) : post.scheduledFor;
+          return d < earliest ? d : earliest;
+        }, new Date(data.posts[0].scheduledFor as string));
+        setCurrentMonth(earliestDate.getMonth());
+        setCurrentYear(earliestDate.getFullYear());
       }
-    };
+    } catch (error) {
+      console.error('Failed to fetch calendar:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchCalendar();
+  useEffect(() => {
+    fetchAllPosts(true); // Initial load: show month of earliest post
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentMonth, currentYear]);
+  }, []);
+
+  // Posts filtered to current month for display
+  const postsForCurrentMonth = useMemo(() => {
+    return posts.filter((post) => {
+      const d = typeof post.scheduledFor === 'string' ? new Date(post.scheduledFor) : post.scheduledFor;
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+  }, [posts, currentMonth, currentYear]);
 
   // Fetch connected platforms on mount and when edit modal opens
   useEffect(() => {
@@ -99,7 +116,9 @@ export default function ContentCalendarPage() {
     };
 
     fetchPlatforms();
-  }, [showEditModal, getConnectedPlatforms]);
+    // Only refetch when modal opens; getConnectedPlatforms is stable from the hook
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showEditModal]);
 
   // Helper function to get local date string (YYYY-MM-DD) without timezone issues
   const getLocalDateString = (date: Date): string => {
@@ -109,10 +128,10 @@ export default function ContentCalendarPage() {
     return `${year}-${month}-${day}`;
   };
 
-  // Group posts by date
+  // Group posts by date (for current month view)
   const postsByDate = useMemo(() => {
     const grouped: Record<string, ScheduledPost[]> = {};
-    posts.forEach((post) => {
+    postsForCurrentMonth.forEach((post) => {
       const date = typeof post.scheduledFor === 'string' 
         ? new Date(post.scheduledFor) 
         : post.scheduledFor;
@@ -123,7 +142,7 @@ export default function ContentCalendarPage() {
       grouped[dateKey].push(post);
     });
     return grouped;
-  }, [posts]);
+  }, [postsForCurrentMonth]);
 
   // Generate calendar days
   const calendarDays = useMemo(() => {
@@ -187,9 +206,7 @@ export default function ContentCalendarPage() {
       );
       setShowScheduleModal(false);
       setNewPost({ platform: 'twitter', content: '', scheduledFor: '' });
-      // Refresh calendar
-      const data = await getContentCalendar(currentMonth + 1, currentYear);
-      setPosts(data.posts);
+      await fetchAllPosts();
     } catch (error) {
       console.error('Failed to schedule post:', error);
       toast.error('Failed to schedule post. Please try again.');
@@ -260,9 +277,7 @@ export default function ContentCalendarPage() {
       );
       setShowEditModal(false);
       setEditingPost(null);
-      // Refresh calendar
-      const data = await getContentCalendar(currentMonth + 1, currentYear);
-      setPosts(data.posts);
+      await fetchAllPosts();
       toast.success('Post updated successfully!');
     } catch (error) {
       console.error('Failed to update post:', error);
@@ -284,9 +299,7 @@ export default function ContentCalendarPage() {
     setPosting(true);
     try {
       await postNow(editingPost.id);
-      // Refresh calendar
-      const data = await getContentCalendar(currentMonth + 1, currentYear);
-      setPosts(data.posts);
+      await fetchAllPosts();
       toast.success('Post published successfully!');
       setShowEditModal(false);
       setEditingPost(null);
@@ -307,9 +320,7 @@ export default function ContentCalendarPage() {
       await deleteScheduledPost(post.id);
       setShowEditModal(false); // Close edit modal
       setEditingPost(null);
-      // Refresh calendar
-      const data = await getContentCalendar(currentMonth + 1, currentYear);
-      setPosts(data.posts);
+      await fetchAllPosts();
       toast.success('Post deleted successfully!');
     } catch (error) {
       console.error('Failed to delete post:', error);
@@ -381,7 +392,7 @@ export default function ContentCalendarPage() {
                   Calendar View
                 </CardTitle>
                 <CardDescription>
-                  {posts.length} posts scheduled
+                  {postsForCurrentMonth.length} posts scheduled this month
                 </CardDescription>
               </div>
               <div className="flex items-center space-x-2">
@@ -393,9 +404,28 @@ export default function ContentCalendarPage() {
                 >
                   ←
                 </Button>
-                <span className="font-semibold text-gray-900 min-w-[150px] text-center">
-                  {new Date(currentYear, currentMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                </span>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={currentMonth}
+                    onChange={(e) => setCurrentMonth(parseInt(e.target.value, 10))}
+                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    title="Select month"
+                  >
+                    {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m, i) => (
+                      <option key={m} value={i}>{m}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={currentYear}
+                    onChange={(e) => setCurrentYear(parseInt(e.target.value, 10))}
+                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    title="Select year"
+                  >
+                    {Array.from({ length: 15 }, (_, i) => new Date().getFullYear() - 5 + i).map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
@@ -417,25 +447,9 @@ export default function ContentCalendarPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {posts.length === 0 ? (
-              <div className="text-center py-12">
-                <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600 mb-2">No posts scheduled yet</p>
-                <p className="text-sm text-gray-500 mb-4">
-                  Start scheduling content to see it here
-                </p>
-                <Button
-                  variant="gradient"
-                  onClick={() => setShowScheduleModal(true)}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Schedule Your First Post
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-1 mb-4">
+            <div className="space-y-4">
+              {/* Calendar Grid - always visible */}
+              <div className="grid grid-cols-7 gap-1 mb-4">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
                     <div key={day} className="text-center text-sm font-semibold text-gray-600 py-2">
                       {day}
@@ -484,9 +498,19 @@ export default function ContentCalendarPage() {
                     );
                   })}
                 </div>
-
-              </div>
-            )}
+              {postsForCurrentMonth.length === 0 && (
+                <p className="text-center text-sm text-gray-500 py-4">
+                  {posts.length === 0 ? 'No posts scheduled yet.' : 'No posts scheduled this month.'}{' '}
+                  <button
+                    type="button"
+                    onClick={() => setShowScheduleModal(true)}
+                    className="text-blue-600 hover:text-blue-700 font-medium underline"
+                  >
+                    Schedule a post
+                  </button>
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
       ) : (

@@ -527,7 +527,7 @@ export default function CreateMeetingPage() {
             <div className="p-4 bg-white rounded-3xl w-fit">
               
               {/* Your Team Section */}
-              {team.length > 0 && (
+               {team.length > 0 && (
               <div>
                 <h2 className="text-lg font-[400] text-[#3F3F46] mb-4">Your team is ready to start action!</h2>
                 <div className="flex gap-3 flex-wrap">

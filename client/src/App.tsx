@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './shared/components/ProtectedRoute';
 import PlatformLayout from './shared/layouts/PlatformLayout';
 import HomePage from './features/home/pages/HomePage';
+import LoginPage from './features/auth/pages/LoginPage';
 import TalentPage from './features/talent/pages/TalentPage';
 import CreateMeetingPage from './features/talent/pages/CreateMeetingPage';
 import DashboardPage from './features/social/pages/DashboardPage';
@@ -16,6 +17,9 @@ function App() {
       <Routes>
         {/* Public Home Route */}
         <Route path="/" element={<HomePage />} />
+        
+        {/* Auth Routes */}
+        <Route path="/login" element={<LoginPage />} />
         
         {/* Public Social Dashboard Routes - No Auth Required */}
         <Route element={<PlatformLayout />}>
