@@ -9,6 +9,8 @@ type TalentCardProps = {
   availability: boolean;
   onCardClick?: () => void;
   isDisabled?: boolean;
+  showAddButton?: boolean;
+  onAddClick?: () => void;
 };
 
 export function TalentCard({
@@ -18,6 +20,8 @@ export function TalentCard({
   image_url,
   onCardClick,
   isDisabled = false,
+  showAddButton = false,
+  onAddClick,
 }: TalentCardProps) {
   return (
     <div
@@ -52,6 +56,19 @@ export function TalentCard({
           WebkitMaskImage: 'linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%)',
         }}
       />
+
+      {/* Add button */}
+      {showAddButton && onAddClick && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddClick();
+          }}
+          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center transition-all duration-200 shadow-md z-10"
+        >
+          <Plus className="w-4 h-4 text-gray-700" />
+        </button>
+      )}
 
       {/* Content */}
       <div className="relative z-10 p-4">

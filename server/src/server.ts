@@ -13,6 +13,7 @@ import chatRoutes from './routes/chat.routes.js';
 import aiTalentSearchRoutes from './routes/aiTalentSearch.routes.js';
 import organizationRoutes from './routes/organization.routes.js';
 import meetingRoutes from './routes/meeting.routes.js';
+import { startScheduledPostsCron } from './jobs/scheduledPostsCron.js';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -60,6 +61,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📡 API available at http://localhost:${PORT}/api`);
+  startScheduledPostsCron();
 });
 
 

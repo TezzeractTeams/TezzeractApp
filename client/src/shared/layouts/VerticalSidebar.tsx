@@ -22,10 +22,11 @@ export default function VerticalSidebar() {
 
   return (
     <aside 
-      className="w-[80px] bg-[#F2F2F2] h-full flex flex-col items-center py-4 space-y-2 "
+      className="relative overflow-hidden w-[80px] bg-[#F2F2F2] h-full flex flex-col items-center py-4 space-y-2"
     >
       {/* Blurred Background Layer */}
       <div 
+        data-debug="sidebar-blur"
         className=" inset-0"
         style={{
           backgroundImage: `url(${sidebarBg})`,

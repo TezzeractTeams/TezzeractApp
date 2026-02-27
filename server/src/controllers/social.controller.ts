@@ -15,6 +15,7 @@ import {
   getGoogleAnalyticsProperties,
   updateGoogleAnalyticsProperty,
 } from '../utils/googleAnalytics.js';
+import { publishScheduledPost } from '../services/scheduledPostPublisher.js';
 import {
   fetchGoogleAnalyticsData,
   fetchYouTubeData,
@@ -316,6 +317,7 @@ export const getConnectedPlatforms = async (req: AuthRequest, res: Response) => 
       { id: 'youtube', name: 'YouTube Analytics' },
       { id: 'meta', name: 'Meta (Facebook & Instagram)' },
       { id: 'twitter', name: 'Twitter/X' },
+      { id: 'linkedin', name: 'LinkedIn' },
     ];
 
     // Fetch connections from database
@@ -341,12 +343,23 @@ export const getConnectedPlatforms = async (req: AuthRequest, res: Response) => 
       (connections || []).map(conn => [conn.platform_id, conn])
     );
 
+    // LinkedIn is connected when Unipile env vars are set (for page posting) or when OAuth connected
+    const hasUnipileLinkedInEnv =
+      !!process.env.UNIPILE_API_KEY?.trim() &&
+      !!process.env.UNIPILE_DSN_KEY?.trim() &&
+      !!process.env.LINKEDIN_ACCOUNT_ID?.trim() &&
+      !!process.env.LINKEDIN_ORG_ID?.trim();
+
     const platforms = availablePlatforms.map(platform => {
       const connection = platformMap.get(platform.id);
+      const isLinkedIn = platform.id === 'linkedin';
+      const connected = isLinkedIn
+        ? hasUnipileLinkedInEnv || !!connection
+        : !!connection;
       return {
         id: platform.id,
         name: platform.name,
-        connected: !!connection,
+        connected,
         lastSync: connection?.last_sync_at || null,
         propertyName: connection?.metadata?.property_name || null,
       };
@@ -857,174 +870,33 @@ export const postNow = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Organization not found' });
     }
 
-    // Get scheduled post
-    const { data: post, error: postError } = await supabase
-      .from('scheduled_posts')
-      .select('*')
-      .eq('id', id)
-      .eq('organization_id', org.id)
-      .single();
+    const { post, platformResponse } = await publishScheduledPost(
+      id,
+      req.auth.userId,
+      org.id
+    );
 
-    if (postError || !post) {
+    res.json({
+      message: 'Post published successfully',
+      post,
+      platformResponse,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Post now error:', error);
+
+    if (message.includes('Scheduled post not found')) {
       return res.status(404).json({ error: 'Scheduled post not found' });
     }
-
-    // Get platform connection
-    const platformIdMap: Record<string, string> = {
-      twitter: 'twitter',
-      facebook: 'meta',
-      instagram: 'meta',
-      linkedin: 'linkedin',
-      youtube: 'youtube',
-    };
-
-    const platformId = platformIdMap[post.platform] || post.platform;
-    const { data: connection } = await supabase
-      .from('platform_connections')
-      .select('*')
-      .eq('user_id', req.auth.userId)
-      .eq('platform_id', platformId)
-      .single();
-
-    if (!connection || !connection.access_token) {
-      return res.status(400).json({ 
-        error: `Platform ${post.platform} is not connected. Please connect it first.` 
-      });
+    if (
+      message.includes('is not connected') ||
+      message.includes('Instagram posting requires') ||
+      message.includes('is not supported')
+    ) {
+      return res.status(400).json({ error: message });
     }
 
-    // Post to platform based on type
-    let postResult;
-    try {
-      switch (post.platform) {
-        case 'twitter':
-          // Post to Twitter/X
-          const twitterResponse = await fetch('https://api.twitter.com/2/tweets', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${connection.access_token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              text: post.content,
-            }),
-          });
-
-          if (!twitterResponse.ok) {
-            const errorData = await twitterResponse.text();
-            throw new Error(`Twitter API error: ${errorData}`);
-          }
-
-          postResult = await twitterResponse.json();
-          break;
-
-        case 'facebook':
-          // Post to Facebook Page (requires page access token)
-          // For now, we'll use the user access token
-          // In production, you'd need to exchange for a page token
-          const fbResponse = await fetch(`https://graph.facebook.com/v18.0/me/feed`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${connection.access_token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              message: post.content,
-            }),
-          });
-
-          if (!fbResponse.ok) {
-            const errorData = await fbResponse.text();
-            throw new Error(`Facebook API error: ${errorData}`);
-          }
-
-          postResult = await fbResponse.json();
-          break;
-
-        case 'instagram':
-          // Instagram requires a different approach - needs media container
-          // For text-only posts, we'll use Facebook Graph API
-          return res.status(400).json({ 
-            error: 'Instagram posting requires media. Please use the Instagram API with media upload.' 
-          });
-
-        case 'linkedin':
-          // LinkedIn API v2 posting
-          const linkedinResponse = await fetch('https://api.linkedin.com/v2/ugcPosts', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${connection.access_token}`,
-              'Content-Type': 'application/json',
-              'X-Restli-Protocol-Version': '2.0.0',
-            },
-            body: JSON.stringify({
-              author: `urn:li:person:${connection.metadata?.linkedin_person_id || ''}`,
-              lifecycleState: 'PUBLISHED',
-              specificContent: {
-                'com.linkedin.ugc.ShareContent': {
-                  shareCommentary: {
-                    text: post.content,
-                  },
-                  shareMediaCategory: 'NONE',
-                },
-              },
-              visibility: {
-                'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC',
-              },
-            }),
-          });
-
-          if (!linkedinResponse.ok) {
-            const errorData = await linkedinResponse.text();
-            throw new Error(`LinkedIn API error: ${errorData}`);
-          }
-
-          postResult = await linkedinResponse.json();
-          break;
-
-        default:
-          return res.status(400).json({ error: `Platform ${post.platform} is not supported for direct posting yet.` });
-      }
-
-      // Update post status to published
-      const { data: updatedPost, error: updateError } = await supabase
-        .from('scheduled_posts')
-        .update({
-          status: 'published',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .eq('organization_id', org.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('Error updating post status:', updateError);
-        // Post was successful but status update failed - still return success
-      }
-
-      res.json({ 
-        message: 'Post published successfully', 
-        post: updatedPost || post,
-        platformResponse: postResult 
-      });
-    } catch (platformError: any) {
-      // Update post status to failed
-      await supabase
-        .from('scheduled_posts')
-        .update({
-          status: 'failed',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .eq('organization_id', org.id);
-
-      return res.status(500).json({ 
-        error: `Failed to post to ${post.platform}: ${platformError.message}` 
-      });
-    }
-  } catch (error: any) {
-    console.error('Post now error:', error);
-    res.status(500).json({ error: 'Failed to post: ' + (error.message || 'Unknown error') });
+    res.status(500).json({ error: 'Failed to post: ' + message });
   }
 };
 

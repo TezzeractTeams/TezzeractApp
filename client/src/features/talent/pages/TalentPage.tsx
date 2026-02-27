@@ -6,6 +6,7 @@ import { useChatStoreHydrated, type ChatMessage } from "@/shared/stores/useChatS
 import { useOrganizationStore } from "@/shared/stores/useOrganizationStore";
 import { ChatPanel } from "../components/ChatPanel";
 import { AvailableTalents } from "../components/AvailableTalents";
+import { SuggestedTalents } from "../components/SuggestedTalents";
 import { getTalents } from "@/shared/services/talentService";
 import { useChatService } from "@/shared/services/chatService";
 import AuthModal from "@/features/auth/components/AuthModal";
@@ -378,7 +379,7 @@ export default function TalentPage() {
         </div>
 
         {/* AI Selected Talents */}
-        <div className="flex-1 transition-all rounded-3xl duration-300 ease-out flex flex-col py-4 ">
+        <div className="flex-1 transition-all rounded-3xl duration-300 ease-out flex flex-col py-4 overflow-y-auto">
           {filteredTalents.length > 0 && (
             <h1 className="text-[#27272A] text-xl font-light mb-4 flex-shrink-0">This is the best team for you</h1>
           )}
@@ -391,6 +392,13 @@ export default function TalentPage() {
               onAddToTeam={handleAddToTeam}
             />
           </div>
+          {filteredTalents.length > 0 && allTalents.length > filteredTalents.length && (
+            <SuggestedTalents
+              recommendedTalents={filteredTalents}
+              allTalents={allTalents}
+              onAddToTeam={handleAddToTeam}
+            />
+          )}
         </div>
       </div>
       

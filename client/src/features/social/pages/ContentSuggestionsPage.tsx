@@ -124,9 +124,15 @@ export default function ContentSuggestionsPage() {
         end_date: '',
       });
       setShowObjectiveForm(false);
-    } catch (error) {
-      console.error('Failed to create objective:', error);
-      toast.error('Failed to create objective. Please try again.');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string; details?: string } }; message?: string };
+      const serverError = err.response?.data?.error;
+      const details = err.response?.data?.details;
+      const message = serverError
+        ? (details ? `${serverError}: ${details}` : serverError)
+        : (err.message ?? 'Failed to create objective. Please try again.');
+      console.error('Failed to create objective:', message, error);
+      toast.error(message);
     }
   };
 

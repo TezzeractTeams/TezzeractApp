@@ -21,7 +21,12 @@ export function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
           return (
             <button
               key={tab.id}
-              onClick={() => onTabChange(tab.id)}
+              onClick={() => {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/0b0f08c3-d177-414e-9c2d-ee1698ed7d28',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Tabs.tsx:tabClick',message:'Main tab clicked',data:{tabId:tab.id},hypothesisId:'H3',timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
+                onTabChange(tab.id);
+              }}
               className={`
                 flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors
                 ${
