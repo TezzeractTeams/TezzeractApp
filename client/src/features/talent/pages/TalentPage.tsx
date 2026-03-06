@@ -9,7 +9,7 @@ import { AvailableTalents } from "../components/AvailableTalents";
 import { SuggestedTalents } from "../components/SuggestedTalents";
 import { getTalents } from "@/shared/services/talentService";
 import { useChatService } from "@/shared/services/chatService";
-import AuthModal from "@/features/auth/components/AuthModal";
+import LoginSidePanel from "@/features/auth/components/LoginSidePanel";
 
 
 interface Talent {
@@ -20,6 +20,25 @@ interface Talent {
   experience_years: number;
   availability: boolean;
   role?: string;
+}
+
+/** Returns true if the message looks like a talent search (e.g. "I need backend developers"), false for casual messages (e.g. "good morning"). */
+function looksLikeTalentSearch(message: string): boolean {
+  const m = message.toLowerCase().trim().replace(/[.!?]+$/, "");
+  const words = m.split(/\s+/).filter(Boolean);
+
+  const casualPhrases = [
+    "good morning", "good afternoon", "good evening", "good night",
+    "hi", "hello", "hey", "thanks", "thank you", "ok", "okay",
+    "bye", "goodbye", "yes", "no", "sure", "what's up", "how are you",
+  ];
+  if (casualPhrases.some((p) => m === p || m.startsWith(p + " "))) return false;
+
+  const talentKeywords = ["developer", "designer", "engineer", "team", "need", "want", "looking for", "hire", "role", "position", "backend", "frontend", "fullstack", "mobile", "ui", "ux"];
+  if (talentKeywords.some((k) => m.includes(k))) return true;
+
+  if (words.length <= 2) return false;
+  return true;
 }
 
 export default function TalentPage() {
@@ -114,7 +133,8 @@ export default function TalentPage() {
 
         // Use recommendedTalents if available, otherwise fallback to talents
         const newTalents = response.recommendedTalents || response.talents || [];
-        
+        const isTalentSearch = response.isTalentSearch === true;
+
         // Create AI response message
         const aiResponse: ChatMessage = {
           id: (Date.now() + 1).toString(),
@@ -125,28 +145,32 @@ export default function TalentPage() {
         };
 
         addMessage(aiResponse);
-        
-        // Replace recommended talents with new ones (user wants to replace team, not add)
-        setRecommendedTalents(newTalents);
-        
-        // Replace team: Remove old talents and add new ones
-        const newTalentIds = new Set(newTalents.map(t => t.id));
-        const updatedTeam = yourTeam.filter(t => newTalentIds.has(t.id));
-        newTalents.forEach((talent) => {
-          if (!updatedTeam.some((t) => t.id === talent.id)) {
-            updatedTeam.push(talent);
+
+        // Only refresh talents/team when AI interpreted the message as a talent search
+        // Casual messages like "good morning" should not clear or replace the team
+        if (isTalentSearch) {
+          // Replace recommended talents with new ones (user wants to replace team, not add)
+          setRecommendedTalents(newTalents);
+
+          // Replace team: Remove old talents and add new ones
+          const newTalentIds = new Set(newTalents.map(t => t.id));
+          const updatedTeam = yourTeam.filter(t => newTalentIds.has(t.id));
+          newTalents.forEach((talent) => {
+            if (!updatedTeam.some((t) => t.id === talent.id)) {
+              updatedTeam.push(talent);
+            }
+          });
+          updateTeam(updatedTeam);
+
+          // Update suggested skills from AI response (if available)
+          if (response.skills && response.skills.length > 0) {
+            setSuggestedSkills(response.skills.slice(0, 4)); // Show top 4 skills
+            setSelectedSkillFilters([]); // Reset filters when new skills arrive
+          } else if (response.roles && response.roles.length > 0) {
+            // Use roles as suggested skills if available
+            setSuggestedSkills(response.roles.slice(0, 4));
+            setSelectedSkillFilters([]);
           }
-        });
-        updateTeam(updatedTeam);
-        
-        // Update suggested skills from AI response (if available)
-        if (response.skills && response.skills.length > 0) {
-          setSuggestedSkills(response.skills.slice(0, 4)); // Show top 4 skills
-          setSelectedSkillFilters([]); // Reset filters when new skills arrive
-        } else if (response.roles && response.roles.length > 0) {
-          // Use roles as suggested skills if available
-          setSuggestedSkills(response.roles.slice(0, 4));
-          setSelectedSkillFilters([]);
         }
 
         // Handle organization form flow
@@ -348,6 +372,9 @@ export default function TalentPage() {
   // Show only AI-recommended talents (never show all talents)
   const filteredTalents = recommendedTalents;
 
+  const lastUserMessage = [...messages].filter((m) => m.role === "user").pop()?.content ?? "";
+  const shouldShowTalentLoading = isResponding && looksLikeTalentSearch(lastUserMessage);
+
   const handleSkillFilterToggle = (skill: string) => {
     toggleSkillFilter(skill);
   };
@@ -386,7 +413,7 @@ export default function TalentPage() {
           <div className="flex-1 min-h-0">
             <AvailableTalents
               talents={filteredTalents}
-              isLoading={isResponding}
+              isLoading={shouldShowTalentLoading}
               hasUserMessage={hasUserMessage}
               yourTeam={yourTeam}
               onAddToTeam={handleAddToTeam}
@@ -402,11 +429,10 @@ export default function TalentPage() {
         </div>
       </div>
       
-      {/* Auth Modal */}
-      <AuthModal
+      {/* Login Side Panel */}
+      <LoginSidePanel
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        initialMode="signin"
       />
     </div>
   );

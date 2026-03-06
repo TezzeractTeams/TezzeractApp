@@ -17,6 +17,8 @@ export interface ChatAIResponse {
   recommendedTalents?: RecommendedTalent[];
   roles?: string[];
   skills?: string[];
+  /** True when the user's message was interpreted as a talent search (roles extracted). Casual messages like "good morning" are false. */
+  isTalentSearch?: boolean;
 }
 
 /**

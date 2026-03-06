@@ -3,11 +3,12 @@ import { useAuth } from '@/shared/contexts/AuthContext';
 import { Users, BarChart3, MessageSquare, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 import sidebarBg from '@/assets/images/Side Bar.png';
+import tezzeractIcon from '@/assets/images/tezzeract-icon.png';
 import tezzeractIconWhite from '@/assets/images/tezzeractIconWhite.png';
 
 const navItems = [
-  { path: '/talent', icon: Users, label: 'Talent Search' },
-  { path: '/social', icon: BarChart3, label: 'Social Media' },
+  { path: '/talent', icon: Users, label: 'Talent' },
+  { path: '/social', icon: BarChart3, label: 'Contelli' },
   { path: '/chat', icon: MessageSquare, label: 'Chat' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
@@ -47,13 +48,15 @@ export default function VerticalSidebar() {
       <div className="relative z-20 flex flex-col items-center  flex-1">
         {/* Logo */}
         <div className="mb-6">
-          <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center text-white font-bold text-xl">
-            T
-          </div>
+          <img
+            src={tezzeractIcon}
+            alt="Tezzeract"
+            className="w-10 h-10 object-contain"
+          />
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 flex items-center flex-col w-full">
+        <nav className="flex-1 flex items-center flex-col w-full gap-4">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
@@ -65,8 +68,8 @@ export default function VerticalSidebar() {
                 
                 return cn(
                   isTalentPath
-                    ? 'w-[70px]  !rounded-xl flex flex-col items-center justify-center transition-all duration-200 group relative py-2'
-                    : 'w-20 h-20 rounded-xl flex items-center justify-center transition-all duration-200 group relative',
+                    ? 'w-[70px] !rounded-xl flex flex-col items-center justify-center transition-all duration-200 group relative py-2'
+                    : 'w-[70px] h-20 rounded-xl flex flex-col items-center justify-center transition-all duration-200 group relative py-2',
                   isTalentActive
                     ? ''
                     : isActive
@@ -86,31 +89,30 @@ export default function VerticalSidebar() {
               {({ isActive }) => {
                 const isTalentPath = item.path === '/talent';
                 const isTalentActive = isTalentPath && (isActive || location.pathname.startsWith('/talent'));
+                const isActiveState = isTalentPath ? isTalentActive : isActive;
                 
                 return (
                   <>
                     {isTalentPath ? (
-                      <>
-                        <img 
-                          src={tezzeractIconWhite} 
-                          alt="Talent" 
-                          className="w-10 h-10 object-contain" 
-                        />
-                        <span 
-                          className={cn(
-                            "text-center text-xs -pt-2 font-normal leading-4",
-                            isTalentActive ? "text-white" : "text-black group-hover:text-white"
-                          )}
-                          style={{
-                            fontFamily: 'Figtree, sans-serif',
-                          }}
-                        >
-                          Contelli
-                        </span>
-                      </>
+                      <img 
+                        src={tezzeractIconWhite} 
+                        alt={item.label} 
+                        className="w-10 h-10 object-contain" 
+                      />
                     ) : (
                       <item.icon className="w-6 h-6" />
                     )}
+                    <span 
+                      className={cn(
+                        "text-center text-xs -pt-2 font-normal leading-4",
+                        isActiveState ? "text-white" : "text-black group-hover:text-white"
+                      )}
+                      style={{
+                        fontFamily: 'Figtree, sans-serif',
+                      }}
+                    >
+                      {item.label}
+                    </span>
                   </>
                 );
               }}

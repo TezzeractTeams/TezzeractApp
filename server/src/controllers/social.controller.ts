@@ -353,8 +353,9 @@ export const getConnectedPlatforms = async (req: AuthRequest, res: Response) => 
     const platforms = availablePlatforms.map(platform => {
       const connection = platformMap.get(platform.id);
       const isLinkedIn = platform.id === 'linkedin';
+      const optedOut = connection?.metadata?.opted_out === true;
       const connected = isLinkedIn
-        ? hasUnipileLinkedInEnv || !!connection
+        ? !optedOut && (hasUnipileLinkedInEnv || !!connection)
         : !!connection;
       return {
         id: platform.id,
@@ -440,15 +441,41 @@ export const disconnectPlatform = async (req: AuthRequest, res: Response) => {
     const { platform } = req.params;
 
     // Delete connection from database
-    const { error } = await supabase
+    const { error: deleteError } = await supabase
       .from('platform_connections')
       .delete()
       .eq('user_id', userId)
       .eq('platform_id', platform);
 
-    if (error) {
-      console.error('Database error:', error);
+    if (deleteError) {
+      console.error('Database error:', deleteError);
       return res.status(500).json({ error: 'Failed to disconnect platform' });
+    }
+
+    // LinkedIn can be "connected" via Unipile env vars without a DB row.
+    // Store an opted-out marker so getConnectedPlatforms shows it as disconnected.
+    const hasUnipileLinkedInEnv =
+      platform === 'linkedin' &&
+      !!process.env.UNIPILE_API_KEY?.trim() &&
+      !!process.env.UNIPILE_DSN_KEY?.trim() &&
+      !!process.env.LINKEDIN_ACCOUNT_ID?.trim() &&
+      !!process.env.LINKEDIN_ORG_ID?.trim();
+
+    if (hasUnipileLinkedInEnv) {
+      const { error: insertError } = await supabase
+        .from('platform_connections')
+        .upsert({
+          user_id: userId,
+          platform_id: 'linkedin',
+          platform_name: 'LinkedIn',
+          metadata: { opted_out: true },
+        }, {
+          onConflict: 'user_id,platform_id',
+        });
+
+      if (insertError) {
+        console.error('Failed to store LinkedIn opt-out:', insertError);
+      }
     }
 
     res.json({ message: `Platform ${platform} disconnected successfully` });
