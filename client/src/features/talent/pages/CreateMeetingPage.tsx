@@ -14,7 +14,7 @@ import { TezzeractButton } from "@/shared/components/ui/TezzeractButton";
 import { Plus, Check, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/shared/utils/cn";
 import { bookMeeting } from "@/shared/services/meetingService";
-import AuthModal from "@/features/auth/components/AuthModal";
+import LoginSidePanel from "@/features/auth/components/LoginSidePanel";
 
 interface OrganizationFormData {
   organizationName: string;
@@ -189,7 +189,8 @@ export default function CreateMeetingPage() {
       
       // Use recommendedTalents if available, otherwise fallback to talents
       const newTalents = response.recommendedTalents || response.talents || [];
-      
+      const isTalentSearch = response.isTalentSearch === true;
+
       // If team already exists and API returned new talents, prevent team change
       if (team.length > 0 && newTalents.length > 0) {
         // User tried to search for new talents, show polite message instead
@@ -217,26 +218,29 @@ export default function CreateMeetingPage() {
       };
 
       addMessage(aiResponse);
-      
-      // Only update team if we're not on CreateMeetingPage with existing team
-      // On CreateMeetingPage, team is locked and shouldn't be changed
-      if (team.length === 0 && newTalents.length > 0) {
-        // Replace recommended talents with new ones (user wants to replace team, not add)
-        setRecommendedTalents(newTalents);
-        
-        // Update team: Replace old talents with new ones
-        updateTeam(newTalents);
-      }
-      // If team already exists, don't update it (team is locked on CreateMeetingPage)
-      
-      // Update suggested skills from AI response (if available)
-      if (response.skills && response.skills.length > 0) {
-        setSuggestedSkills(response.skills.slice(0, 4)); // Show top 4 skills
-        setSelectedSkillFilters([]); // Reset filters when new skills arrive
-      } else if (response.roles && response.roles.length > 0) {
-        // Use roles as suggested skills if available
-        setSuggestedSkills(response.roles.slice(0, 4));
-        setSelectedSkillFilters([]);
+
+      // Only update team/talents when AI interpreted the message as a talent search
+      // Casual messages like "good morning" should not refresh
+      if (isTalentSearch) {
+        // Only update team if we're not on CreateMeetingPage with existing team
+        // On CreateMeetingPage, team is locked and shouldn't be changed
+        if (team.length === 0 && newTalents.length > 0) {
+          // Replace recommended talents with new ones (user wants to replace team, not add)
+          setRecommendedTalents(newTalents);
+
+          // Update team: Replace old talents with new ones
+          updateTeam(newTalents);
+        }
+
+        // Update suggested skills from AI response (if available)
+        if (response.skills && response.skills.length > 0) {
+          setSuggestedSkills(response.skills.slice(0, 4)); // Show top 4 skills
+          setSelectedSkillFilters([]); // Reset filters when new skills arrive
+        } else if (response.roles && response.roles.length > 0) {
+          // Use roles as suggested skills if available
+          setSuggestedSkills(response.roles.slice(0, 4));
+          setSelectedSkillFilters([]);
+        }
       }
 
       // Handle organization form flow
@@ -278,7 +282,7 @@ export default function CreateMeetingPage() {
     } finally {
       setIsResponding(false);
     }
-  }, [input, isResponding, messages, addMessage, setInput, setIsResponding, setRecommendedTalents, setSuggestedSkills, setSelectedSkillFilters, updateTeam, sendTalentChat, setCurrentStep]);
+  }, [input, isResponding, messages, team.length, addMessage, setInput, setIsResponding, setRecommendedTalents, setSuggestedSkills, setSelectedSkillFilters, updateTeam, sendTalentChat, setCurrentStep]);
   
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -730,10 +734,9 @@ export default function CreateMeetingPage() {
         </div>
       </div>
       
-      <AuthModal
+      <LoginSidePanel
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        initialMode="signin"
       />
     </div>
   );

@@ -38,9 +38,7 @@ export function AvailableTalents({
   onAddToTeam,
 }: AvailableTalentsProps) {
   const [selectedTalent, setSelectedTalent] = useState<Talent | null>(null);
-  
-  // Grid columns for AI-selected talents
-  const gridCols = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+  const gridCols = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4  min-[1900px]:grid-cols-5";
 
   // If a talent is selected, show portfolio
   if (selectedTalent) {

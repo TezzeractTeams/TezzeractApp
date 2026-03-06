@@ -108,19 +108,31 @@ export function ChatPanel({
           }}
         >
           <img src={TezzeractTextLogo} alt="Tezzeract logo" className="h-4 z-100000" />
-          {onClearChat && (
-            <button
-              onClick={() => {
-                if (window.confirm('Are you sure you want to clear all chat history? This will remove all messages and reset the conversation.')) {
-                  onClearChat();
-                }
-              }}
-              className="p-2 rounded-lg hover:bg-gray-200 transition-colors duration-200 z-100000"
-              title="Clear chat history"
-            >
-              <Trash2 className="w-4 h-4 text-gray-600" />
-            </button>
-          )}
+          <div className="flex items-center gap-2 z-100000">
+            {!user && onLoginClick && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onLoginClick}
+                className="rounded-lg border-gray-300 text-gray-700 hover:bg-gray-100"
+              >
+                Log innnnn
+              </Button>
+            )}
+            {onClearChat && (
+              <button
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to clear all chat history? This will remove all messages and reset the conversation.')) {
+                    onClearChat();
+                  }
+                }}
+                className="p-2 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                title="Clear chat history"
+              >
+                <Trash2 className="w-4 h-4 text-gray-600" />
+              </button>
+            )}
+          </div>
         </div>
         <div className="px-4  z-0 flex-1 overflow-y-auto scrollbar-hide min-h-0 pt-[112px]">
           <div className="max-w-full mx-auto space-y-4">
@@ -208,7 +220,21 @@ export function ChatPanel({
   }
 
   return (
-    <div className="flex flex-col bg-white h-full justify-center rounded-3xl p-8">
+    <div className="flex flex-col bg-white h-full justify-center rounded-3xl p-8 relative">
+      {/* Top bar with login button */}
+      <div className="absolute top-0 left-0 right-0 p-6 flex items-center justify-between">
+        <img src={TezzeractTextLogo} alt="Tezzeract logo" className="h-4" />
+        {!user && onLoginClick && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onLoginClick}
+            className="rounded-lg border-gray-300 text-gray-700 hover:bg-gray-100"
+          >
+            Log in
+          </Button>
+        )}
+      </div>
       <h1 className="text-gray-900 text-center text-5xl font-light mb-8">
         Start exploring talent,
         <br /> form your team & start growing!

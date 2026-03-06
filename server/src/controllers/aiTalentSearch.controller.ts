@@ -474,6 +474,10 @@ export const handleTalentChat = async (req: Request, res: Response) => {
       matchesWeakConfirmation
     });
 
+    // Only treat as talent search when we extracted roles from the user's message
+    // Casual messages like "good morning" should not trigger talent/team refresh
+    const isTalentSearch = extractedRoles.length > 0;
+
     return res.json({
       content: naturalResponse,
       recommendedTalents: recommendedTalents.map((rt) => ({
@@ -485,6 +489,7 @@ export const handleTalentChat = async (req: Request, res: Response) => {
       skills: extractedSkills, // AI-extracted skills for each role
       showOrganizationForm: shouldShowForm,
       showBothForms: showBothForms && shouldShowForm,
+      isTalentSearch,
     });
   } catch (error) {
     console.error('handleTalentChat error:', error);

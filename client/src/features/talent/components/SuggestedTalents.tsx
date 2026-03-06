@@ -81,14 +81,14 @@ export function SuggestedTalents({
   }
 
   const gridCols =
-    "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+    "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4  min-[1900px]:grid-cols-5";
 
   return (
-    <div className="mt-8">
+    <div className="xl:mt-8 mt-4 ">
       <h2 className="text-[#27272A] text-xl font-light mb-4">
         Suggested Talents
       </h2>
-      <div className={`grid ${gridCols} gap-4`}>
+      <div className={`grid ${gridCols} gap-4` } >
         {suggestedTalents.map((talent, index) => (
           <div
             key={talent.id}
