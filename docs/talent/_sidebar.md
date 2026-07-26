@@ -1,0 +1,5 @@
+- [Overview](README.md)
+- <span class="group-label">Deep dives</span>
+- [Talent Graph](../architecture/technical/32-talent-graph.md)
+- [Talent Operations](../architecture/technical/42-talent-operations.md)
+- [Revenue-First Plan](../architecture/technical/40-revenue-first-plan.md)

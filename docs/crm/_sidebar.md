@@ -1,0 +1,4 @@
+- [Overview](README.md)
+- <span class="group-label">Deep dives</span>
+- [Substrate Strategy](../architecture/technical/33-substrate-strategy.md)
+- [Talent Graph](../architecture/technical/32-talent-graph.md)

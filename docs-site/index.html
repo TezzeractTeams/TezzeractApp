@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tezzeract Developer Docs</title>
+  <meta name="description" content="Tezzeract developer documentation" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="assets/img/tezzeract-mark.png" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-pagination@2/dist/docsify-pagination.min.css" />
+  <link rel="stylesheet" href="assets/css/tezzeract-docs.css" />
+</head>
+<body>
+
+  <!-- SVG defs shared by the header mark and by Mermaid diagrams — the one gradient
+       used site-wide lives here, once, referenced by id everywhere else. -->
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <linearGradient id="tzGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#00A9EE" />
+        <stop offset="100%" stop-color="#00378A" />
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <header class="tz-topbar">
+    <div class="tz-leading">
+      <button id="tz-menu-toggle" class="tz-menu-btn" aria-label="Toggle navigation" aria-controls="app" aria-expanded="false" title="Toggle navigation" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 8h16M4 12h16M4 16h16" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="tz-brand">
+      <a href="#/content/architecture/SUMMARY" class="tz-mark" aria-label="Tezzeract Developer Docs home">
+        <img src="assets/img/tezzeract-mark.png" width="18" height="18" alt="" />
+      </a>
+      <img class="tz-word" src="assets/img/tezzeract-wordmark.png" width="103" height="14" alt="Tezzeract" />
+      <span class="tz-sep">/</span>
+      <span class="tz-label">Developer Documentation</span>
+    </div>
+
+    <div class="tz-tabs-shell">
+    <nav class="tz-tabs">
+      <a href="#/content/architecture/SUMMARY" data-part="architecture"><span class="tz-tab-label">Core Architecture</span><span class="tz-tab-label--short">Arch</span></a>
+      <a href="#/content/talent/README" data-part="talent"><span class="tz-tab-label">Talent</span><span class="tz-tab-label--short">Talent</span></a>
+      <a href="#/content/contelli/README" data-part="contelli"><span class="tz-tab-label">Contelli</span><span class="tz-tab-label--short">Contelli</span></a>
+      <a href="#/content/talk/README" data-part="talk"><span class="tz-tab-label">Talk</span><span class="tz-tab-label--short">Talk</span></a>
+      <a href="#/content/crm/README" data-part="crm"><span class="tz-tab-label">CRM</span><span class="tz-tab-label--short">CRM</span></a>
+      <a href="#/content/app-platform/README" data-part="app-platform"><span class="tz-tab-label">App Platform</span><span class="tz-tab-label--short">Apps</span></a>
+    </nav>
+    </div>
+
+    <div class="tz-trailing">
+      <button id="tz-theme-toggle" class="tz-icon-btn" aria-label="Toggle color theme" title="Toggle color theme">
+        <svg class="tz-icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.4 4.4l1.7 1.7M17.9 17.9l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.4 19.6l1.7-1.7M17.9 6.1l1.7-1.7"/></svg>
+        <svg class="tz-icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div id="app"></div>
+  <div id="tz-sidebar-backdrop" class="tz-sidebar-backdrop" aria-hidden="true"></div>
+
+  <script>
+    // Collapse the bare-root case into a concrete route before docsify ever initializes.
+    // docsify's `homepage` option substitutes content for '/' WITHOUT ever updating
+    // location.hash, which means a plugin that reads the current route (ours does, for
+    // both the sidebar and the mermaid render) never sees a real path on first paint.
+    // Redirecting up front means there is only one code path, always.
+    (function () {
+      if (!location.hash || location.hash === '#/' || location.hash === '#') {
+        location.hash = '#/content/architecture/SUMMARY';
+      }
+    })();
+
+    // Mobile sidebar: docsify toggles body.close, but its built-in .sidebar-toggle sits
+    // under our fixed top bar and uses 300px offsets while our sidebar is 260px wide.
+    // We drive the same class from a top-bar button and close on backdrop / navigation.
+    (function () {
+      var mq = window.matchMedia('(max-width: 768px)');
+
+      function isMobile() { return mq.matches; }
+
+      function syncSidebarPlacement() {
+        var sidebar = document.querySelector('.sidebar');
+        var main = document.querySelector('#app main');
+        var backdrop = document.getElementById('tz-sidebar-backdrop');
+        if (!sidebar || !main || !backdrop) return;
+
+        if (isMobile()) {
+          if (sidebar.parentElement !== document.body) {
+            document.body.insertBefore(sidebar, backdrop);
+          }
+        } else if (sidebar.parentElement === document.body) {
+          main.insertBefore(sidebar, main.firstChild);
+        }
+      }
+
+      function setSidebarOpen(open) {
+        var menuBtn = document.getElementById('tz-menu-toggle');
+        var backdrop = document.getElementById('tz-sidebar-backdrop');
+        if (!isMobile()) {
+          document.body.classList.remove('tz-sidebar-open', 'close');
+          if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+          return;
+        }
+        syncSidebarPlacement();
+        document.body.classList.toggle('tz-sidebar-open', open);
+        document.body.classList.remove('close');
+        if (backdrop) backdrop.setAttribute('aria-hidden', open ? 'false' : 'true');
+        if (backdrop && open) {
+          backdrop.style.pointerEvents = 'none';
+          window.setTimeout(function () {
+            if (document.body.classList.contains('tz-sidebar-open')) {
+              backdrop.style.pointerEvents = '';
+            }
+          }, 320);
+        } else if (backdrop) {
+          backdrop.style.pointerEvents = '';
+        }
+        if (menuBtn) menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+
+      function toggleSidebar(e) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        if (!isMobile()) return;
+        setSidebarOpen(!document.body.classList.contains('tz-sidebar-open'));
+      }
+
+      function bindSidebarControls() {
+        var topbar = document.querySelector('.tz-topbar');
+        var backdrop = document.getElementById('tz-sidebar-backdrop');
+        if (topbar && !topbar.dataset.tzSidebarBound) {
+          topbar.dataset.tzSidebarBound = '1';
+          topbar.addEventListener('click', function (e) {
+            if (e.target.closest('#tz-menu-toggle')) toggleSidebar(e);
+          });
+        }
+        if (backdrop && !backdrop.dataset.tzBound) {
+          backdrop.dataset.tzBound = '1';
+          backdrop.addEventListener('click', function (e) {
+            if (e.target === backdrop) setSidebarOpen(false);
+          });
+        }
+      }
+
+      function bindSidebarInteractionGuards() {
+        var sidebar = document.querySelector('.sidebar');
+        if (!sidebar || sidebar.dataset.tzInteractionBound) return;
+        sidebar.dataset.tzInteractionBound = '1';
+        sidebar.addEventListener('click', function (e) {
+          e.stopPropagation();
+        });
+      }
+
+      bindSidebarControls();
+      document.addEventListener('DOMContentLoaded', function () {
+        bindSidebarControls();
+        syncSidebarPlacement();
+        bindSidebarInteractionGuards();
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && isMobile() && document.body.classList.contains('tz-sidebar-open')) {
+          setSidebarOpen(false);
+        }
+      });
+
+      mq.addEventListener('change', function () {
+        syncSidebarPlacement();
+        if (!isMobile()) {
+          document.body.classList.remove('tz-sidebar-open', 'close');
+          var menuBtn = document.getElementById('tz-menu-toggle');
+          if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      window.__tzSyncSidebar = function () {
+        syncSidebarPlacement();
+        bindSidebarInteractionGuards();
+      };
+      window.__tzCloseSidebar = function () {
+        if (isMobile()) setSidebarOpen(false);
+      };
+      window.__tzInitSidebar = function () {
+        syncSidebarPlacement();
+        bindSidebarInteractionGuards();
+        if (isMobile()) setSidebarOpen(false);
+        else document.body.classList.remove('close', 'tz-sidebar-open');
+      };
+    })();
+
+    // Theme: explicit choice in localStorage wins; otherwise follow the system.
+    (function () {
+      var stored = localStorage.getItem('tz-theme');
+      if (stored) document.documentElement.setAttribute('data-theme', stored);
+      document.addEventListener('DOMContentLoaded', function () {
+        var btn = document.getElementById('tz-theme-toggle');
+        btn.addEventListener('click', function () {
+          var current = document.documentElement.getAttribute('data-theme') ||
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          var next = current === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          localStorage.setItem('tz-theme', next);
+          // Already-rendered Mermaid SVGs are frozen in whatever theme they were drawn
+          // in — a live toggle needs them redrawn, not just the page CSS. Defined later,
+          // once mermaid.min.js has loaded; looked up here, called at click time (by
+          // which point the whole page has loaded).
+          if (window.__tzRerenderMermaid) window.__tzRerenderMermaid();
+        });
+      });
+    })();
+
+    window.$docsify = {
+      // No `name` — sidebar title is redundant with the top bar brand.
+      // No basePath: docsify's per-directory `loadSidebar: true` auto-discovery computes
+      // the sidebar path straight from the route, ignoring basePath entirely — with
+      // basePath set it requests /architecture/_sidebar.md (404) instead of the real
+      // /content/architecture/_sidebar.md. Making 'content/' part of every route sidesteps
+      // that rather than fighting it.
+      homepage: 'content/architecture/SUMMARY.md',
+      // A truthy value here just makes docsify instantiate the .sidebar-nav container;
+      // its own per-directory auto-discovery doesn't recompute per route in this version
+      // (verified: it re-requests the same path regardless of navigation), so the actual
+      // content is loaded by our own plugin below instead.
+      loadSidebar: '_sidebar.md',
+      loadNavbar: false,
+      subMaxLevel: 3,
+      auto2top: true,
+      relativePath: true,
+      search: {
+        maxAge: 86400000,
+        paths: 'auto',
+        placeholder: 'Search…',
+        noData: 'No results',
+        depth: 4
+      },
+      copyCode: {
+        buttonText: 'Copy',
+        errorText: 'Error',
+        successText: 'Copied'
+      },
+      pagination: {
+        previousText: 'Previous',
+        nextText: 'Next',
+        crossChapter: false
+      },
+      formatUpdated: '{MM}/{DD}/{YYYY}',
+      plugins: [
+        function (hook) {
+          var sidebarCache = {};
+
+          hook.init(function () {
+            if (window.__tzInitSidebar) window.__tzInitSidebar();
+          });
+
+          // Docsify's search plugin injects default styles after our stylesheet; drop them
+          // so tezzeract-docs.css owns search appearance. Keep the hide-on-search behavior.
+          hook.mounted(function () {
+            document.querySelectorAll('style').forEach(function (el) {
+              var text = el.textContent || '';
+              if (text.indexOf('.search .input-wrap') !== -1 &&
+                  text.indexOf('.sidebar-nav.hide') !== -1) {
+                el.remove();
+              }
+            });
+            if (window.__tzSyncSidebar) window.__tzSyncSidebar();
+          });
+
+          var sectionMeta = {};
+          document.querySelectorAll('.tz-tabs a[data-part]').forEach(function (a) {
+            var part = a.getAttribute('data-part');
+            var href = (a.getAttribute('href') || '').replace(/^#\/?/, '');
+            var labelEl = a.querySelector('.tz-tab-label');
+            sectionMeta[part] = { label: labelEl ? labelEl.textContent.trim() : a.textContent.trim(), home: href };
+          });
+
+          // Resolve a markdown-relative link (from inside a _sidebar.md file) against the
+          // directory that file lives in, e.g. dir='content/architecture',
+          // rel='technical/10-decisions.md' -> 'content/architecture/technical/10-decisions.md'.
+          function resolvePath(dir, rel) {
+            var url = new URL(rel, 'https://x.invalid/' + dir.replace(/^\/+/, '') + '/');
+            return url.pathname.replace(/^\/+/, '');
+          }
+
+          function labelFromFilename(name) {
+            return name.replace(/\.md$/, '').split('-').map(function (w) {
+              return w.charAt(0).toUpperCase() + w.slice(1);
+            }).join(' ');
+          }
+
+          function labelFromSidebar(md, dir, routePath) {
+            if (!md) return null;
+            var lines = md.split('\n');
+            for (var i = 0; i < lines.length; i++) {
+              var linkMatch = lines[i].match(/^-\s*\[(.+?)\]\((.+?)\)\s*$/);
+              if (!linkMatch) continue;
+              var resolved = resolvePath(dir, linkMatch[2]).replace(/\.md$/, '');
+              if (resolved === routePath) return linkMatch[1];
+            }
+            return null;
+          }
+
+          function ensureBreadcrumbsEl() {
+            var sidebar = document.querySelector('.sidebar');
+            if (!sidebar) return null;
+            var el = sidebar.querySelector('.tz-sidebar-breadcrumbs');
+            if (!el) {
+              el = document.createElement('nav');
+              el.className = 'tz-sidebar-breadcrumbs';
+              el.setAttribute('aria-label', 'Breadcrumb');
+              var search = sidebar.querySelector('.search');
+              if (search) sidebar.insertBefore(el, search);
+              else sidebar.insertBefore(el, sidebar.firstChild);
+            } else {
+              var searchNode = sidebar.querySelector('.search');
+              if (searchNode && el.nextElementSibling !== searchNode) {
+                sidebar.insertBefore(el, searchNode);
+              }
+            }
+            return el;
+          }
+
+          function renderBreadcrumbs(routePath) {
+            var el = ensureBreadcrumbsEl();
+            if (!el) return;
+
+            var parts = routePath.split('/').filter(Boolean);
+            if (parts[0] !== 'content' || parts.length < 2) {
+              el.innerHTML = '';
+              el.hidden = true;
+              return;
+            }
+
+            var section = parts[1];
+            var meta = sectionMeta[section] || {
+              label: section.split('-').map(function (w) {
+                return w.charAt(0).toUpperCase() + w.slice(1);
+              }).join(' '),
+              home: 'content/' + section + '/README'
+            };
+
+            var crumbs = [{ label: meta.label, route: meta.home }];
+            var dirParts = parts.slice(0, -1);
+            var fileName = parts[parts.length - 1];
+
+            for (var i = 2; i < dirParts.length; i++) {
+              var subDir = dirParts.slice(0, i + 1).join('/');
+              crumbs.push({
+                label: dirParts[i].split('-').map(function (w) {
+                  return w.charAt(0).toUpperCase() + w.slice(1);
+                }).join(' '),
+                route: subDir + '/README'
+              });
+            }
+
+            var pageDir = dirParts.join('/');
+            var sidebarUrl = pageDir + '/_sidebar.md';
+            var pageLabel = labelFromSidebar(sidebarCache[sidebarUrl], pageDir, routePath);
+            if (!pageLabel) {
+              var parentDir = dirParts.slice(0, -1).join('/');
+              if (parentDir) {
+                pageLabel = labelFromSidebar(
+                  sidebarCache[parentDir + '/_sidebar.md'],
+                  parentDir,
+                  routePath
+                );
+              }
+            }
+            if (!pageLabel) pageLabel = labelFromFilename(fileName);
+            crumbs.push({ label: pageLabel, route: routePath, current: true });
+
+            var html = '<ol>';
+            crumbs.forEach(function (crumb, idx) {
+              var isLast = idx === crumbs.length - 1;
+              html += '<li' + (isLast ? ' aria-current="page"' : '') + '>';
+              if (isLast) {
+                html += '<span>' + crumb.label + '</span>';
+              } else {
+                html += '<a href="#/' + crumb.route + '">' + crumb.label + '</a>';
+              }
+              html += '</li>';
+            });
+            html += '</ol>';
+            el.innerHTML = html;
+            el.hidden = false;
+          }
+
+          // Our _sidebar.md files use exactly two line shapes: a link bullet, or a
+          // group-label bullet wrapping a <span>. That's all that needs parsing.
+          function renderSidebar(md, dir, currentRoute) {
+            var lines = md.split('\n');
+            var html = '<ul>';
+            lines.forEach(function (line) {
+              var linkMatch = line.match(/^-\s*\[(.+?)\]\((.+?)\)\s*$/);
+              var labelMatch = line.match(/^-\s*(<span class="group-label">.*<\/span>)\s*$/);
+              if (linkMatch) {
+                var label = linkMatch[1], rel = linkMatch[2];
+                var resolved = resolvePath(dir, rel).replace(/\.md$/, '');
+                var isActive = resolved === currentRoute;
+                html += '<li' + (isActive ? ' class="active"' : '') + '>' +
+                  '<a href="#/' + resolved + '">' + label + '</a></li>';
+              } else if (labelMatch) {
+                html += '<li>' + labelMatch[1] + '</li>';
+              }
+            });
+            return html + '</ul>';
+          }
+
+          function loadSidebarForRoute() {
+            var nav = document.querySelector('.sidebar-nav');
+            if (!nav) return;
+            var routePath = (window.location.hash || '').replace(/^#\/?/, '');
+            if (!routePath) routePath = 'content/architecture/SUMMARY'; // bare '/' -> homepage's own dir
+            var segments = routePath.split('/');
+            segments.pop(); // drop the current file, keep its directory
+            var dir = segments.join('/');
+            var sidebarUrl = dir + '/_sidebar.md';
+
+            function render(md) {
+              nav.innerHTML = renderSidebar(md, dir, routePath);
+            }
+
+            if (sidebarCache[sidebarUrl] !== undefined) {
+              render(sidebarCache[sidebarUrl]);
+              return;
+            }
+            fetch(sidebarUrl).then(function (r) {
+              return r.ok ? r.text() : '';
+            }).then(function (md) {
+              sidebarCache[sidebarUrl] = md;
+              render(md);
+              renderBreadcrumbs(routePath);
+            }).catch(function () { nav.innerHTML = ''; });
+          }
+
+          hook.doneEach(function () {
+            var routePath = (window.location.hash || '').replace(/^#\/?/, '');
+            if (!routePath) routePath = 'content/architecture/SUMMARY';
+            loadSidebarForRoute();
+            renderBreadcrumbs(routePath);
+            if (window.__tzSyncSidebar) window.__tzSyncSidebar();
+            if (window.__tzCloseSidebar) window.__tzCloseSidebar();
+
+            // Active top-tab: route is content/<section>/..., so the section is the
+            // second path segment.
+            var parts = (window.location.hash || '').replace(/^#\/?/, '').split('/');
+            var seg = parts[0] === 'content' ? parts[1] : parts[0];
+            document.querySelectorAll('.tz-tabs a').forEach(function (a) {
+              a.classList.toggle('active', a.getAttribute('data-part') === seg);
+            });
+
+            // Render ```mermaid fences directly — no third-party glue plugin, nothing
+            // external to go stale. See docs-site/README.md for why.
+            var blocks = document.querySelectorAll('pre[data-lang="mermaid"]');
+            if (blocks.length && window.mermaid) {
+              blocks.forEach(function (pre) {
+                // Read from <code>, not <pre> — docsify-copy-code injects a sibling
+                // <button> inside <pre>, and pre.textContent would include its label
+                // text glued onto the end of the diagram source (this actually broke a
+                // `class ... kernel` statement into `kernelCopyErrorCopied` once).
+                var code = pre.querySelector('code');
+                var source = (code || pre).textContent;
+                var div = document.createElement('div');
+                div.className = 'mermaid';
+                div.dataset.src = source;       // kept for a theme-toggle re-render
+                div.textContent = source;
+                pre.replaceWith(div);
+              });
+            }
+            if (window.__tzRunMermaid) window.__tzRunMermaid();
+          });
+        }
+      ]
+    };
+  </script>
+
+  <!-- Docsify plugins (CDN, no build step). Each mutates window.$docsify.plugins when it
+       loads, so docsify.min.js — the core that reads that array and renders — loads last. -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2/dist/docsify-copy-code.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-pagination@2/dist/docsify-pagination.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    // Strict grayscale Mermaid theme — the one exception is the shared #tzGradient
+    // fill, opted into per-diagram via a `classDef` (see docs/architecture/SUMMARY.md
+    // for the pattern) and painted on post-render (paintDiagramNodes below), never a
+    // mermaid default.
+    (function () {
+      function isDarkNow() {
+        var attr = document.documentElement.getAttribute('data-theme');
+        return attr === 'dark' ||
+          (attr !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      }
+
+      function themeVars() {
+        var dark = isDarkNow();
+        var shared = {
+          darkMode: dark ? 'true' : 'false',
+          fontFamily: 'Figtree, sans-serif',
+          fontSize: '14px'
+        };
+        return dark ? Object.assign(shared, {
+          background: 'transparent',
+          primaryColor: '#2A2A2A',
+          primaryTextColor: '#E7E7E5',
+          primaryBorderColor: '#4A4A4A',
+          secondaryColor: '#232323',
+          secondaryTextColor: '#E7E7E5',
+          secondaryBorderColor: '#3A3A3A',
+          tertiaryColor: '#333333',
+          tertiaryTextColor: '#999996',
+          tertiaryBorderColor: '#3A3A3A',
+          lineColor: '#5A5A5A',
+          textColor: '#E7E7E5',
+          mainBkg: '#2A2A2A',
+          nodeBorder: '#4A4A4A',
+          nodeTextColor: '#E7E7E5',
+          clusterBkg: '#232323',
+          clusterBorder: '#3A3A3A',
+          edgeLabelBackground: '#232323',
+          titleColor: '#E7E7E5',
+          attributeBackgroundColorOdd: '#2A2A2A',
+          attributeBackgroundColorEven: '#383838',
+          /* ER diagrams */
+          erLabelBoxBkgColor: '#232323',
+          erLabelBoxBorderColor: '#4A4A4A',
+          erLabelTextColor: '#E7E7E5',
+          /* Gantt */
+          sectionBkgColor: '#232323',
+          altSectionBkgColor: '#2A2A2A',
+          gridColor: '#3A3A3A',
+          todayLineColor: '#6E6E6B',
+          taskBkgColor: '#333333',
+          taskTextColor: '#E7E7E5',
+          taskTextLightColor: '#E7E7E5',
+          taskTextDarkColor: '#191919',
+          taskTextOutsideColor: '#E7E7E5',
+          activeTaskBkgColor: '#404040',
+          activeTaskBorderColor: '#5A5A5A',
+          doneTaskBkgColor: '#2A2A2A',
+          doneTaskBorderColor: '#4A4A4A',
+          critBkgColor: '#404040',
+          critBorderColor: '#6E6E6B',
+          axisTextColor: '#999996',
+          /* Sequence / state */
+          actorBkg: '#2A2A2A',
+          actorBorder: '#4A4A4A',
+          actorTextColor: '#E7E7E5',
+          actorLineColor: '#5A5A5A',
+          signalColor: '#5A5A5A',
+          labelBoxBkgColor: '#232323',
+          labelBoxBorderColor: '#4A4A4A',
+          labelTextColor: '#E7E7E5',
+          loopTextColor: '#E7E7E5',
+          noteBkgColor: '#333333',
+          noteTextColor: '#E7E7E5',
+          noteBorderColor: '#4A4A4A',
+          activationBkgColor: '#404040',
+          activationBorderColor: '#5A5A5A'
+        }) : Object.assign(shared, {
+          background: 'transparent',
+          primaryColor: '#F7F7F5',
+          primaryTextColor: '#191919',
+          primaryBorderColor: '#D9D9D6',
+          secondaryColor: '#EFEFED',
+          secondaryTextColor: '#191919',
+          secondaryBorderColor: '#D9D9D6',
+          tertiaryColor: '#E8E8E5',
+          tertiaryTextColor: '#6B6B68',
+          tertiaryBorderColor: '#D9D9D6',
+          lineColor: '#B8B8B4',
+          textColor: '#191919',
+          mainBkg: '#F7F7F5',
+          nodeBorder: '#D9D9D6',
+          nodeTextColor: '#191919',
+          clusterBkg: '#ffffff',
+          clusterBorder: '#EDEDEB',
+          edgeLabelBackground: '#F7F7F5',
+          titleColor: '#191919',
+          attributeBackgroundColorOdd: '#F7F7F5',
+          attributeBackgroundColorEven: '#EFEFED',
+          erLabelBoxBkgColor: '#F7F7F5',
+          erLabelBoxBorderColor: '#D9D9D6',
+          erLabelTextColor: '#191919',
+          sectionBkgColor: '#F7F7F5',
+          altSectionBkgColor: '#EFEFED',
+          gridColor: '#EDEDEB',
+          todayLineColor: '#9B9B97',
+          taskBkgColor: '#E8E8E5',
+          taskTextColor: '#191919',
+          taskTextLightColor: '#191919',
+          taskTextDarkColor: '#191919',
+          taskTextOutsideColor: '#191919',
+          activeTaskBkgColor: '#D9D9D6',
+          activeTaskBorderColor: '#B8B8B4',
+          doneTaskBkgColor: '#EFEFED',
+          doneTaskBorderColor: '#D9D9D6',
+          critBkgColor: '#D9D9D6',
+          critBorderColor: '#9B9B97',
+          axisTextColor: '#6B6B68',
+          actorBkg: '#F7F7F5',
+          actorBorder: '#D9D9D6',
+          actorTextColor: '#191919',
+          actorLineColor: '#B8B8B4',
+          signalColor: '#B8B8B4',
+          labelBoxBkgColor: '#F7F7F5',
+          labelBoxBorderColor: '#D9D9D6',
+          labelTextColor: '#191919',
+          loopTextColor: '#191919',
+          noteBkgColor: '#EFEFED',
+          noteTextColor: '#191919',
+          noteBorderColor: '#D9D9D6',
+          activationBkgColor: '#E8E8E5',
+          activationBorderColor: '#D9D9D6'
+        });
+      }
+
+      function themeCSS() {
+        var dark = isDarkNow();
+        var text = dark ? '#E7E7E5' : '#191919';
+        var entityBkg = dark ? '#333333' : '#EFEFED';
+        var attrOdd = dark ? '#2A2A2A' : '#F7F7F5';
+        var attrEven = dark ? '#383838' : '#EFEFED';
+        var border = dark ? '#4A4A4A' : '#D9D9D6';
+        var line = dark ? '#6E6E6B' : '#9B9B97';
+        var relBkg = dark ? '#232323' : '#F7F7F5';
+        return [
+          '.entityLabel { fill: ' + text + '; }',
+          '.entityTitleText { fill: ' + text + '; }',
+          '.relationshipLabel { fill: ' + text + '; }',
+          '.entityBox { fill: ' + entityBkg + '; stroke: ' + border + '; }',
+          '.attributeBoxOdd { fill: ' + attrOdd + '; stroke: ' + border + '; }',
+          '.attributeBoxEven { fill: ' + attrEven + '; stroke: ' + border + '; }',
+          '.relationshipLine { stroke: ' + line + '; }',
+          '.relationshipLabelBox { fill: ' + relBkg + '; opacity: 1; }',
+          '#MD_PARENT_START, #MD_PARENT_END { fill: ' + attrOdd + ' !important; stroke: ' + line + ' !important; }'
+        ].join('\n');
+      }
+
+      function paintDiagramNodes() {
+        var dark = isDarkNow();
+        var text = dark ? '#E7E7E5' : '#191919';
+        var entityBkg = dark ? '#333333' : '#EFEFED';
+        var attrOdd = dark ? '#2A2A2A' : '#F7F7F5';
+        var attrEven = dark ? '#383838' : '#EFEFED';
+        var border = dark ? '#4A4A4A' : '#D9D9D6';
+        var line = dark ? '#6E6E6B' : '#9B9B97';
+        var relBkg = dark ? '#232323' : '#F7F7F5';
+
+        document.querySelectorAll('.mermaid .kernel').forEach(function (node) {
+          node.querySelectorAll('rect, polygon, path').forEach(function (shape) {
+            shape.setAttribute('fill', 'url(#tzGradient)');
+          });
+        });
+        /* Strip hardcoded white/light SVG backgrounds mermaid sometimes bakes in */
+        document.querySelectorAll('.mermaid svg > rect:first-child').forEach(function (rect) {
+          var fill = (rect.getAttribute('fill') || '').toLowerCase();
+          if (fill === '#fff' || fill === '#ffffff' || fill === 'white' ||
+              fill === '#f7f7f5' || fill === '#191919' || fill === '#f5f5f5' ||
+              fill === '#f4f4f4' || fill === '#fafafa') {
+            rect.setAttribute('fill', 'transparent');
+          }
+        });
+        document.querySelectorAll('.mermaid .edgeLabel rect, .mermaid .labelBkg').forEach(function (el) {
+          el.setAttribute('fill', relBkg);
+        });
+        /* ER diagrams — entity titles use .entityLabel with no baked fill (defaults to black) */
+        document.querySelectorAll('.mermaid .entityLabel, .mermaid .entityTitleText, .mermaid .relationshipLabel').forEach(function (el) {
+          el.setAttribute('fill', text);
+        });
+        document.querySelectorAll('.mermaid .entityBox').forEach(function (el) {
+          el.setAttribute('fill', entityBkg);
+          el.setAttribute('stroke', border);
+        });
+        document.querySelectorAll('.mermaid .attributeBoxOdd').forEach(function (el) {
+          el.setAttribute('fill', attrOdd);
+          el.setAttribute('stroke', border);
+        });
+        document.querySelectorAll('.mermaid .attributeBoxEven').forEach(function (el) {
+          el.setAttribute('fill', attrEven);
+          el.setAttribute('stroke', border);
+        });
+        document.querySelectorAll('.mermaid .relationshipLine').forEach(function (el) {
+          el.setAttribute('stroke', line);
+        });
+        document.querySelectorAll('.mermaid .relationshipLabelBox').forEach(function (el) {
+          el.setAttribute('fill', relBkg);
+        });
+        document.querySelectorAll('.mermaid #MD_PARENT_START, .mermaid #MD_PARENT_END').forEach(function (el) {
+          el.setAttribute('fill', attrOdd);
+          el.setAttribute('stroke', line);
+        });
+      }
+
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'loose',
+        theme: 'base',
+        themeVariables: themeVars(),
+        themeCSS: themeCSS()
+      });
+
+      // Called after new ```mermaid fences are converted to <div class="mermaid"> —
+      // renders whichever ones mermaid hasn't already processed.
+      window.__tzRunMermaid = function () {
+        var result = mermaid.run({ querySelector: '.mermaid' });
+        if (result && typeof result.then === 'function') {
+          result.then(paintDiagramNodes).catch(function () {});
+        } else {
+          paintDiagramNodes();
+        }
+      };
+
+      // Called on theme toggle — already-rendered SVGs are frozen in whichever theme
+      // they were drawn in, so re-initialize with the new palette and redraw every
+      // diagram currently on the page from its saved source.
+      window.__tzRerenderMermaid = function () {
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'loose',
+          theme: 'base',
+          themeVariables: themeVars(),
+          themeCSS: themeCSS()
+        });
+        document.querySelectorAll('.mermaid[data-src]').forEach(function (el) {
+          el.removeAttribute('data-processed'); // mermaid v10 skips elements carrying this
+          el.textContent = el.dataset.src;
+        });
+        window.__tzRunMermaid();
+      };
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+
+  <!-- Extra Prism language grammars — attach to the Prism instance docsify.min.js
+       bundles, so these load after it. -->
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-sql.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-yaml.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+- [Overview](README.md)
+- <span class="group-label">Deep dives</span>
+- [Platform Topology](../architecture/01-platform-topology.md)
+- [Carve-Out Readiness](../architecture/technical/20-carve-out-readiness.md)

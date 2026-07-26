@@ -1,0 +1,5 @@
+- [Overview](README.md)
+- <span class="group-label">Deep dives</span>
+- [Open-Source Foundations](../architecture/technical/23-open-source-foundations.md)
+- [Headless Integration](../architecture/technical/24-headless-integration.md)
+- [Substrate Strategy](../architecture/technical/33-substrate-strategy.md)

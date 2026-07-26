@@ -1,0 +1,4 @@
+- [Overview](README.md)
+- <span class="group-label">Deep dives</span>
+- [App Platform](../architecture/technical/25-app-platform.md)
+- [Carve-Out Readiness](../architecture/technical/20-carve-out-readiness.md)

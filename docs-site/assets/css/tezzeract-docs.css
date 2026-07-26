@@ -1,0 +1,1392 @@
+/* Tezzeract Developer Docs — theme
+   Grayscale by default. Gradient is used in exactly two places: the brand mark, and
+   the active top-tab / active-sidebar-item indicator. Nowhere else.
+*/
+
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('../fonts/figtree-300.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/figtree-400.woff2') format('woff2');
+}
+
+:root {
+  --tz-gradient: linear-gradient(135deg, #00A9EE 0%, #00378A 100%);
+  --tz-primary: #00378A;
+  --tz-accent: #00A9EE;
+  --link-color: var(--tz-primary);
+  --link-hover-color: var(--tz-accent);
+  --tz-hover-accent: var(--text);
+
+  /* Light */
+  --bg: #ffffff;
+  --bg-inset: #F7F7F5;
+  --bg-hover: #EFEFED;
+  --bg-active: #E8E8E5;
+  --text: #191919;
+  --text-dim: #6B6B68;
+  --text-faint: #9B9B97;
+  --border: #EDEDEB;
+  --border-strong: #D9D9D6;
+  --code-text: #191919;
+
+  /* vue.css (our base structural theme) reads --theme-color, falling back to its
+     signature green (#42b983), in nearly every accent rule — including one with higher
+     specificity than our own active-sidebar-item selector. Setting this once here
+     neutralizes every one of those leaks in a single place, rather than fighting
+     specificity rule-by-rule. */
+  --theme-color: var(--text);
+
+  --radius: 6px;
+  --sidebar-width: 260px;
+  --sidebar-gutter: 12px;
+  --sidebar-text-inset: 24px;
+  --topbar-height: 52px;
+  --topbar-tabs-row: 0px;
+  --font: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --letter-spacing: -0.04em; /* -4% kerning — applied to all text site-wide */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tz-hover-accent: #ffffff;
+    --link-color: var(--tz-accent);
+    --link-hover-color: #5CC8F5;
+    --bg: #191919;
+    --bg-inset: #232323;
+    --bg-hover: #2A2A2A;
+    --bg-active: #333333;
+    --text: #E7E7E5;
+    --text-dim: #999996;
+    --text-faint: #6E6E6B;
+    --border: #2A2A2A;
+    --border-strong: #3A3A3A;
+    --code-text: #E7E7E5;
+  }
+}
+:root[data-theme="dark"] {
+  --tz-hover-accent: #ffffff;
+  --link-color: var(--tz-accent);
+  --link-hover-color: #5CC8F5;
+  --bg: #191919; --bg-inset: #232323; --bg-hover: #2A2A2A; --bg-active: #333333;
+  --text: #E7E7E5; --text-dim: #999996; --text-faint: #6E6E6B;
+  --border: #2A2A2A; --border-strong: #3A3A3A; --code-text: #E7E7E5;
+}
+:root[data-theme="light"] {
+  --tz-hover-accent: var(--text);
+  --link-color: var(--tz-primary);
+  --link-hover-color: var(--tz-accent);
+  --bg: #ffffff; --bg-inset: #F7F7F5; --bg-hover: #EFEFED; --bg-active: #E8E8E5;
+  --text: #191919; --text-dim: #6B6B68; --text-faint: #9B9B97;
+  --border: #EDEDEB; --border-strong: #D9D9D6; --code-text: #191919;
+}
+
+* { box-sizing: border-box; }
+html {
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font);
+  font-weight: 400;
+  letter-spacing: var(--letter-spacing);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  font-size: 15.5px;
+  overflow-x: hidden;
+}
+
+body.tz-sidebar-open {
+  overflow: hidden;
+}
+
+body.tz-sidebar-open .tz-topbar {
+  touch-action: auto;
+}
+
+main {
+  overflow-x: clip;
+}
+
+/* ---------------------------------- vue.css text reset ----------------------------------
+   vue.css hardcodes blues, greys, and greens (#34495e, #2c3e50, #505d6b, #42b983…)
+   across body, sidebar, headings, anchors, search, code tokens, etc. Our sheet loads
+   after vue.css — map every remaining text colour to Tezzeract tokens (light + dark). */
+
+.sidebar { color: var(--text); }
+.sidebar ul li a {
+  color: var(--text-dim);
+  text-decoration: none;
+}
+.sidebar ul li a:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+.sidebar ul li.active > a {
+  color: var(--text);
+  border-right: none;
+  font-weight: 400;
+}
+
+.anchor,
+.anchor span {
+  color: inherit;
+  text-decoration: none;
+}
+.anchor:hover {
+  text-decoration: none;
+}
+
+.search .search-keyword {
+  color: var(--text);
+  font-weight: 400;
+  background: var(--bg-active);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+.search a:hover { color: var(--text); }
+
+.progress {
+  background-color: var(--text-dim);
+}
+
+#app {
+  color: var(--text);
+}
+
+kbd {
+  color: var(--text);
+  background: var(--bg-inset);
+  border-color: var(--border-strong);
+}
+
+.markdown-section output:after,
+.markdown-section pre:after {
+  color: var(--text-faint);
+}
+
+.markdown-section p.tip,
+.markdown-section p.warn {
+  color: var(--text-dim);
+  background: var(--bg-inset);
+  border-left-color: var(--border-strong);
+}
+.markdown-section p.tip em,
+.markdown-section p.tip code {
+  color: inherit;
+  background: transparent;
+}
+
+/* Prism tokens vue.css leaves coloured — fold into our monochrome set */
+.token.namespace { opacity: 0.7; }
+.token.attr-name,
+.token.property,
+.token.entity,
+.token.url,
+.token.atrule,
+.token.regex,
+.token.statement,
+.token.placeholder,
+.token.variable,
+.token.deleted,
+.token.inserted,
+.token.important {
+  color: var(--text-dim);
+}
+
+/* ---------------------------------- Top bar ---------------------------------- */
+.tz-topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--topbar-height);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "brand tabs trailing";
+  align-items: stretch;
+  gap: 8px;
+  padding: 0 max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  isolation: isolate;
+}
+
+.tz-leading {
+  display: none;
+  align-items: center;
+  position: relative;
+  z-index: 3;
+}
+
+.tz-trailing {
+  grid-area: trailing;
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  position: relative;
+  z-index: 3;
+}
+
+.tz-brand {
+  grid-area: brand;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  position: relative;
+  z-index: 3;
+  align-self: center;
+}
+.tz-mark { display: flex; flex-shrink: 0; }
+.tz-mark img {
+  display: block;
+  width: 17.6px;
+  height: 17.6px;
+  border-radius: 4px;
+}
+.tz-word {
+  display: block;
+  height: 14.4px;
+  width: auto;
+  flex-shrink: 0;
+}
+.tz-sep { color: var(--border-strong); font-weight: 300; }
+.tz-label { font-weight: 400; font-size: 14px; color: var(--text); }
+
+/* Tab strip wrapper — fade overlay pins to the viewport edge, not scroll width */
+.tz-tabs-shell {
+  grid-area: tabs;
+  position: relative;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Middle column: centered when there is room; scrolls horizontally when tabs overflow */
+.tz-tabs {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: safe center;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+  z-index: 1;
+  contain: layout style;
+}
+/* docsify/vue.css attach .app-nav to this element — undo their absolute positioning */
+.tz-topbar .tz-tabs.app-nav,
+.tz-topbar .app-nav {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  text-align: center;
+  z-index: 1 !important;
+  width: 100%;
+  max-width: 100%;
+}
+.tz-tabs::-webkit-scrollbar { display: none; }
+.tz-tabs a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  font-size: 13.5px;
+  font-weight: 400;
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 0 12px;
+  border-radius: 0;
+  white-space: nowrap;
+}
+.tz-tab-label--short { display: none; }
+.tz-tabs a:hover:not(.active) {
+  color: var(--text);
+  background: transparent;
+}
+.tz-tabs a:hover:not(.active)::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--tz-hover-accent);
+}
+.tz-tabs a.active,
+.tz-topbar .tz-tabs.app-nav a.active {
+  color: var(--text-dim);
+  background: transparent;
+  border-bottom: none;
+}
+.tz-tabs a.active:hover,
+.tz-topbar .tz-tabs.app-nav a.active:hover {
+  color: var(--text);
+}
+.tz-tabs a.active::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--tz-gradient);
+}
+
+/* Mobile nav toggle — thin-line icon; docsify's built-in .sidebar-toggle is hidden */
+.tz-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  position: relative;
+  z-index: 4;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.tz-menu-btn:hover { color: var(--text); }
+.tz-menu-btn svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+}
+
+.tz-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.tz-icon-btn:hover { color: var(--text); }
+
+/* One theme icon at a time — must beat .tz-icon-btn svg below */
+.tz-icon-btn .tz-icon-moon { display: none; }
+.tz-icon-btn .tz-icon-sun { display: block; }
+:root[data-theme="dark"] .tz-icon-btn .tz-icon-sun { display: none; }
+:root[data-theme="dark"] .tz-icon-btn .tz-icon-moon { display: block; }
+:root[data-theme="light"] .tz-icon-btn .tz-icon-sun { display: block; }
+:root[data-theme="light"] .tz-icon-btn .tz-icon-moon { display: none; }
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .tz-icon-btn .tz-icon-sun { display: none; }
+  html:not([data-theme="light"]) .tz-icon-btn .tz-icon-moon { display: block; }
+}
+@media (prefers-color-scheme: light) {
+  html:not([data-theme="dark"]) .tz-icon-btn .tz-icon-sun { display: block; }
+  html:not([data-theme="dark"]) .tz-icon-btn .tz-icon-moon { display: none; }
+}
+
+.tz-icon-btn svg { display: block; }
+
+/* Push docsify's own layout below the fixed top bar */
+.sidebar, .content, main { top: var(--topbar-height) !important; }
+
+/* Hide docsify's default bottom-left toggle — we use .tz-menu-btn in the top bar */
+.sidebar-toggle { display: none !important; }
+
+/* ---------------------------------- Sidebar ---------------------------------- */
+.sidebar {
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  padding: 0 0 40px;
+  width: var(--sidebar-width) !important;
+  transition: none !important;
+  text-align: left;
+}
+
+/* Docsify injects h1.app-name when `name` is set — we use the top bar instead */
+.sidebar .app-name {
+  display: none;
+}
+
+/* Desktop: sidebar always visible; ignore docsify's body.close collapse */
+@media (min-width: 769px) {
+  body.close .sidebar { transform: none !important; }
+  .content { left: var(--sidebar-width) !important; transition: none !important; }
+  body.close .content { left: var(--sidebar-width) !important; }
+}
+
+/* Mobile: off-canvas sidebar toggled via body.tz-sidebar-open (not docsify's body.close) */
+@media (max-width: 768px) {
+  /* vue.css sets main { z-index: 0 }, which traps the fixed sidebar beneath the backdrop */
+  #app,
+  #app main {
+    z-index: auto !important;
+    transform: none !important;
+    isolation: auto;
+  }
+
+  main {
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: clip;
+  }
+  .sidebar {
+    position: fixed !important;
+    left: calc(-1 * var(--sidebar-width)) !important;
+    top: var(--topbar-height) !important;
+    bottom: 0 !important;
+    width: var(--sidebar-width) !important;
+    z-index: 99 !important;
+    padding-bottom: max(40px, env(safe-area-inset-bottom));
+    transition: left 0.2s ease !important;
+    transform: none !important;
+  }
+  body.tz-sidebar-open .sidebar {
+    left: 0 !important;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+  }
+  .content {
+    position: relative !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    z-index: 1;
+    padding-top: var(--topbar-height) !important;
+    transition: none !important;
+    transform: none !important;
+  }
+  body.tz-sidebar-open .content {
+    transform: none !important;
+    pointer-events: none;
+  }
+  body.tz-sidebar-open .tz-topbar {
+    pointer-events: auto;
+  }
+  body.tz-sidebar-open .tz-sidebar-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 90;
+  }
+  body > .sidebar {
+    z-index: 99 !important;
+  }
+  .tz-sidebar-backdrop {
+    z-index: 90;
+  }
+  /* docsify may add body.close — neutralize its mobile slide rules */
+  body.close .sidebar {
+    transform: none !important;
+  }
+  body.close:not(.tz-sidebar-open) .sidebar {
+    left: calc(-1 * var(--sidebar-width)) !important;
+  }
+  body.close.tz-sidebar-open .sidebar {
+    left: 0 !important;
+  }
+  body.close .content {
+    transform: none !important;
+  }
+}
+
+.tz-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: var(--topbar-height) 0 0 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 35;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+@media (max-width: 768px) {
+  .tz-sidebar-backdrop { display: block; }
+}
+.sidebar-nav { font-size: 14px; }
+.sidebar-nav .group-label {
+  display: block;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--text-faint);
+  margin: 20px 0 6px;
+  padding: 0 12px;
+}
+.sidebar-nav > ul > li:first-child .group-label { margin-top: 0; }
+
+.sidebar-nav ul { margin: 0; padding: 0 var(--sidebar-gutter); }
+.sidebar-nav li { list-style: none; }
+.sidebar-nav li > a {
+  position: relative;
+  display: block;
+  color: var(--text-dim);
+  font-weight: 300;
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  line-height: 1.4;
+  text-decoration: none;
+}
+.sidebar-nav li:not(.active) > a:hover {
+  color: var(--text);
+  background: transparent;
+}
+.sidebar-nav li:not(.active) > a:hover::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 5px;
+  bottom: 5px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--tz-hover-accent);
+}
+.sidebar-nav li.active > a {
+  font-weight: 400;
+  color: var(--text);
+  background: transparent;
+}
+.sidebar-nav li.active > a::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 5px;
+  bottom: 5px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--tz-gradient);
+}
+
+.tz-sidebar-breadcrumbs {
+  padding: 12px var(--sidebar-gutter) 8px var(--sidebar-text-inset);
+  text-align: left;
+}
+.tz-sidebar-breadcrumbs[hidden] { display: none; }
+.tz-sidebar-breadcrumbs ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.tz-sidebar-breadcrumbs li {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  color: var(--text-faint);
+}
+.tz-sidebar-breadcrumbs li:not(:last-child)::after {
+  content: '/';
+  margin: 0 6px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+.tz-sidebar-breadcrumbs a {
+  color: var(--text-dim);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tz-sidebar-breadcrumbs a:hover { color: var(--text); }
+.tz-sidebar-breadcrumbs li[aria-current="page"] {
+  color: var(--text);
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------------------------------- Sidebar search ---------------------------------- */
+.search {
+  padding: 0 var(--sidebar-gutter) 12px;
+  margin-bottom: 8px;
+}
+
+.search .input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 0 10px 0 34px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-inset);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.search .input-wrap::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translateY(-50%);
+  opacity: 0.55;
+  pointer-events: none;
+  background: currentColor;
+  color: var(--text-faint);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.search .input-wrap:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+
+.search .input-wrap:focus-within {
+  border-color: var(--border-strong);
+  background: var(--bg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-faint) 18%, transparent);
+}
+
+.search .input-wrap:focus-within::before {
+  opacity: 0.85;
+  color: var(--text-dim);
+}
+
+.search input[type="search"] {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 8px 0;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.35;
+  color: var(--text);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.search input[type="search"]::placeholder {
+  color: var(--text-faint);
+  font-weight: 300;
+}
+
+.search input[type="search"]::-webkit-search-decoration,
+.search input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.search .clear-button {
+  display: none;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--bg-active);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.12s ease;
+}
+
+.search .clear-button.show { display: flex; align-items: center; justify-content: center; }
+
+.search .clear-button:hover {
+  background: var(--border-strong);
+  color: var(--text);
+}
+
+.search .clear-button:active { transform: scale(0.94); }
+
+.search .clear-button svg { display: none; }
+
+.search .clear-button::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.search .results-panel {
+  display: none;
+  margin-top: 8px;
+  max-height: min(52vh, 420px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.search .results-panel.show { display: block; }
+
+.search .matching-post {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s ease;
+}
+
+.search .matching-post:last-child { border-bottom: none; }
+
+.search .matching-post > a {
+  display: block;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.search .matching-post:hover,
+.search .matching-post:focus-within {
+  background: var(--bg-hover);
+}
+
+.search .matching-post:active { background: var(--bg-active); }
+
+.search h2 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.search p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 300;
+  line-height: 1.45;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.search p.empty {
+  margin: 0;
+  padding: 18px 14px;
+  font-size: 12.5px;
+  font-weight: 300;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--text-faint);
+}
+
+.search .results-panel.show:not(:has(.matching-post)) {
+  border-style: dashed;
+  background: var(--bg-inset);
+}
+
+/* Docsify hides sidebar nav while search results are open */
+.sidebar-nav.hide,
+.sidebar .app-name.hide {
+  display: none;
+}
+
+/* ---------------------------------- Content ---------------------------------- */
+.content { background: var(--bg); }
+.markdown-section {
+  font-weight: 300;
+  color: var(--text);
+  max-width: 760px;
+  padding: 44px 40px 90px;
+}
+.markdown-section p, .markdown-section li {
+  font-weight: 300; line-height: 1.7; color: var(--text);
+}
+.markdown-section strong {
+  font-weight: 400;
+  color: var(--text);
+}
+.markdown-section em {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.markdown-section h1, .markdown-section h2, .markdown-section h3, .markdown-section h4,
+.markdown-section h5, .markdown-section h6 {
+  font-weight: 400;
+  color: var(--text);
+}
+.markdown-section h1 {
+  font-size: 28px;
+  padding-bottom: 16px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid var(--border);
+}
+.markdown-section h2 { font-size: 20px; margin-top: 46px; }
+.markdown-section h3 { font-size: 16px; margin-top: 32px; }
+.markdown-section h4 { font-size: 14px; margin-top: 22px; color: var(--text-dim); }
+.markdown-section h5 { font-size: 14px; margin-top: 18px; }
+.markdown-section h6 { font-size: 13px; margin-top: 16px; color: var(--text-faint); }
+
+/* Inline body links — brand blues; headings and chrome stay grayscale */
+.content .markdown-section :is(p, li, td, blockquote, dd) a {
+  color: var(--link-color);
+  font-weight: 400;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.content .markdown-section :is(p, li, td, blockquote, dd) a:hover,
+.content .markdown-section :is(p, li, td, blockquote, dd) a:focus-visible {
+  color: var(--link-hover-color);
+}
+.content .markdown-section :is(h1, h2, h3, h4, h5, h6) a,
+.content .markdown-section :is(h1, h2, h3, h4, h5, h6) a:hover,
+.content .markdown-section :is(h1, h2, h3, h4, h5, h6) a:focus-visible {
+  color: inherit;
+  font-weight: inherit;
+}
+
+.markdown-section code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: var(--bg-inset);
+  color: var(--code-text);
+  border-radius: 4px;
+  padding: 2px 5px;
+}
+.markdown-section pre {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-inset) !important;
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+.markdown-section pre > code {
+  background: transparent;
+  color: var(--code-text);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+/* Minimal syntax "highlighting" — weight and style carry the distinction, not hue */
+.token.comment, .token.prolog, .token.doctype, .token.cdata { color: var(--text-faint); font-style: italic; }
+.token.string, .token.attr-value { color: var(--text-dim); }
+.token.keyword, .token.boolean, .token.important, .token.atrule { color: var(--text); font-weight: 400; }
+.token.function, .token.class-name { color: var(--text); }
+.token.number, .token.operator, .token.punctuation { color: var(--text-dim); }
+.token.tag, .token.selector { color: var(--text); }
+
+/* Tables — fully override vue.css hardcoded #ddd borders and #f8f8f8 zebra rows */
+.markdown-section table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 13.5px;
+  font-weight: 300;
+  margin: 22px 0;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.markdown-section table thead {
+  background: var(--bg-inset);
+}
+.markdown-section table th,
+.markdown-section table td {
+  border: none !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 10px 14px;
+  vertical-align: top;
+  color: var(--text);
+}
+.markdown-section table tr {
+  border-top: none !important;
+  background-color: transparent !important;
+}
+.markdown-section table tbody tr:nth-child(even) {
+  background-color: var(--bg-inset) !important;
+}
+.markdown-section table tbody tr:hover {
+  background-color: var(--bg-hover) !important;
+}
+.markdown-section table th {
+  font-weight: 400;
+  text-align: left;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border-strong) !important;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.markdown-section table td:first-child,
+.markdown-section table th:first-child {
+  padding-left: 16px;
+}
+.markdown-section table td:last-child,
+.markdown-section table th:last-child {
+  padding-right: 16px;
+}
+.markdown-section table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* Inline / emoji images */
+.markdown-section img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-inset);
+  display: block;
+  margin: 24px auto;
+}
+.markdown-section iframe {
+  display: block;
+  max-width: 100%;
+  width: 100%;
+  min-height: 200px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.markdown-section img.emoji,
+.markdown-section span.emoji {
+  display: inline;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  margin: 0;
+  vertical-align: -0.1em;
+  height: 1.1em;
+  width: auto;
+}
+
+.markdown-section blockquote {
+  margin: 20px 0;
+  padding: 4px 18px;
+  border-left: 2px solid var(--border-strong);
+  color: var(--text-dim);
+  font-weight: 300;
+}
+.markdown-section blockquote p {
+  margin: 10px 0;
+  color: inherit;
+  font-weight: 300;
+}
+
+.markdown-section hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+/* Mermaid — framed, monochrome by default; the gradient only appears where a diagram
+   opts a node into it via classDef (see docs/architecture/SUMMARY.md). */
+.mermaid {
+  background: var(--bg-inset) !important;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 24px 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+  background: transparent !important;
+}
+/* Mermaid bakes some label backgrounds at render time — keep them theme-aware */
+.mermaid .edgeLabel,
+.mermaid .labelBkg {
+  fill: var(--bg-inset) !important;
+}
+.mermaid .edgeLabel span,
+.mermaid .label text,
+.mermaid .nodeLabel {
+  color: var(--text) !important;
+  fill: var(--text) !important;
+  letter-spacing: var(--letter-spacing);
+}
+
+/* ER diagrams — entity titles use .entityLabel with no default fill (renders black) */
+.mermaid text,
+.mermaid .entityLabel,
+.mermaid .entityTitleText,
+.mermaid .relationshipLabel {
+  letter-spacing: var(--letter-spacing);
+  fill: var(--text) !important;
+}
+.mermaid .entityBox {
+  fill: var(--bg-active) !important;
+  stroke: var(--border-strong) !important;
+}
+.mermaid .attributeBoxOdd {
+  fill: var(--bg-hover) !important;
+  stroke: var(--border-strong) !important;
+}
+.mermaid .attributeBoxEven {
+  fill: var(--bg-active) !important;
+  stroke: var(--border-strong) !important;
+}
+.mermaid .relationshipLine {
+  stroke: var(--text-faint) !important;
+}
+.mermaid .relationshipLabelBox {
+  fill: var(--bg-inset) !important;
+  opacity: 1 !important;
+}
+.mermaid #MD_PARENT_START,
+.mermaid #MD_PARENT_END {
+  fill: var(--bg-hover) !important;
+  stroke: var(--text-faint) !important;
+}
+
+/* Copy-code button — keep it monochrome */
+.docsify-copy-code-button {
+  background: var(--bg) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-dim) !important;
+  border-radius: 5px !important;
+  font-size: 11px !important;
+  padding: 4px 8px !important;
+}
+.docsify-copy-code-button:hover { color: var(--text) !important; }
+
+/* Pagination — text nav links, no boxed outlines */
+.docsify-pagination-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 48px 0 0;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+  overflow: visible;
+}
+
+.pagination-item {
+  margin-top: 0 !important;
+  flex: 1 1 0;
+  min-width: min(100%, 220px);
+  max-width: 320px;
+  border: none !important;
+}
+
+.pagination-item--previous { margin-right: auto; }
+.pagination-item--next { margin-left: auto; text-align: right; }
+
+.pagination-item a {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+  border: none !important;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  text-decoration: none !important;
+  transition: color 0.15s ease;
+}
+
+.pagination-item--previous a { align-items: flex-start; text-align: left; }
+.pagination-item--next a { align-items: flex-end; text-align: right; }
+
+.pagination-item a:hover,
+.pagination-item a:active {
+  background: transparent;
+  border: none !important;
+  box-shadow: none;
+}
+
+.pagination-item a:hover .pagination-item-title {
+  color: var(--link-color);
+}
+
+.pagination-item a:hover .pagination-item-label {
+  color: var(--text-dim);
+}
+
+.pagination-item a:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.pagination-item a:focus-visible .pagination-item-title {
+  text-decoration: underline;
+  text-decoration-color: var(--link-color);
+  text-underline-offset: 3px;
+}
+
+/* Undo docsify-pagination default opacity fades */
+.pagination-item a .pagination-item-label,
+.pagination-item a .pagination-item-title,
+.pagination-item a .pagination-item-subtitle {
+  opacity: 1 !important;
+  transition: color 0.15s ease;
+}
+
+.pagination-item-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.pagination-item-label > * { line-height: 1; vertical-align: middle; }
+
+.pagination-item-label svg {
+  height: 12px;
+  width: auto;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5px;
+}
+
+.pagination-item--previous .pagination-item-label svg { margin-right: 0; }
+.pagination-item--next .pagination-item-label svg { margin-left: 0; }
+
+.pagination-item-title {
+  font-size: 14px !important;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--text);
+  transition: color 0.15s ease;
+}
+
+.pagination-item a:hover .pagination-item-title { text-decoration: none !important; }
+
+.pagination-item-subtitle {
+  font-size: 11px;
+  font-weight: 300;
+  color: var(--text-faint);
+}
+
+@media (max-width: 768px) {
+  .pagination-item {
+    min-width: 100%;
+    max-width: none;
+  }
+  .pagination-item--next { margin-left: 0; }
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; }
+
+/* Narrow tablet: trim brand chrome so module tabs keep usable space in the single-row layout */
+@media (min-width: 769px) and (max-width: 960px) {
+  .tz-word,
+  .tz-sep,
+  .tz-label { display: none; }
+  .tz-brand { gap: 0; }
+  .tz-tabs a { padding: 0 10px; }
+}
+
+/* Mobile: two-row header — controls + centered brand on top, scrollable tabs below */
+@media (max-width: 768px) {
+  :root {
+    --topbar-mobile-pad-top: 4px;
+    --topbar-brand-row: 44px;
+    --topbar-tabs-row: 34px;
+    --topbar-height: calc(var(--topbar-mobile-pad-top) + var(--topbar-brand-row) + var(--topbar-tabs-row));
+  }
+
+  .tz-topbar {
+    height: var(--topbar-height);
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: var(--topbar-brand-row) var(--topbar-tabs-row);
+    grid-template-areas:
+      "leading brand trailing"
+      "tabs tabs tabs";
+    gap: 0;
+    padding: max(4px, env(safe-area-inset-top)) 0 0;
+    align-items: stretch;
+  }
+
+  .tz-leading {
+    display: flex;
+    grid-area: leading;
+    justify-self: start;
+    align-self: center;
+    padding: 0 0 0 max(4px, env(safe-area-inset-left));
+    position: relative;
+    z-index: 5;
+  }
+
+  .tz-trailing {
+    display: flex;
+    grid-area: trailing;
+    justify-self: end;
+    align-self: center;
+    padding: 0 max(4px, env(safe-area-inset-right)) 0 0;
+    position: relative;
+    z-index: 5;
+  }
+
+  .tz-menu-btn {
+    display: flex;
+    width: 44px;
+    height: 44px;
+    position: relative;
+    z-index: 6;
+  }
+
+  .tz-menu-btn svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .tz-icon-btn {
+    display: flex;
+    width: 44px;
+    height: 44px;
+    position: relative;
+    z-index: 6;
+  }
+
+  .tz-brand {
+    grid-area: brand;
+    justify-self: center;
+    align-self: center;
+    gap: 7px;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0 4px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tz-mark { display: flex; }
+  .tz-word { display: none; }
+  .tz-sep { display: inline; }
+  .tz-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 400;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .tz-tabs-shell {
+    grid-area: tabs;
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: 100%;
+    height: var(--topbar-tabs-row);
+    min-height: var(--topbar-tabs-row);
+    position: relative;
+    z-index: 1;
+  }
+
+  .tz-tabs {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    min-height: 0;
+    border-top: none;
+    justify-content: flex-start;
+    gap: 0;
+    padding: 0 max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
+    touch-action: pan-x;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Right-edge fade — fixed to the visible strip, not the scrollable content */
+  .tz-tabs-shell::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 56px;
+    background: linear-gradient(to right, transparent 0%, var(--bg) 88%);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .tz-tabs a {
+    height: 100%;
+    padding: 0 14px;
+    font-size: 13px;
+    scroll-snap-align: start;
+  }
+
+  .tz-tab-label { display: inline; }
+  .tz-tab-label--short { display: none; }
+}
+
+@media (max-width: 768px) {
+  .markdown-section {
+    max-width: 100%;
+    padding: 24px max(16px, env(safe-area-inset-right)) calc(64px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+  .content .markdown-section :is(p, li, td, blockquote, dd) a {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .markdown-section h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+  }
+  .markdown-section h2 { font-size: 18px; margin-top: 32px; }
+  .markdown-section h3 { font-size: 15px; margin-top: 24px; }
+  .markdown-section blockquote {
+    margin: 16px 0;
+    padding: 2px 14px;
+  }
+  .mermaid {
+    padding: 16px !important;
+    margin: 16px 0;
+  }
+  .search .results-panel {
+    max-height: min(40vh, 320px);
+  }
+}
+
+@media (max-width: 480px) {
+  .markdown-section h1 { font-size: 22px; }
+  .markdown-section pre > code { font-size: 12px; }
+}
