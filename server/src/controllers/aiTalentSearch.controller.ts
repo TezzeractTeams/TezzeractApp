@@ -456,10 +456,12 @@ export const handleTalentChat = async (req: Request, res: Response) => {
                           (isShortMessage && matchesWeakConfirmation && (recommendedTalents.length > 0 || hasPreviousAssistantMessages));
     
     // Show form if:
-    // 1. User confirmed AND we have new talents, OR
-    // 2. User is confirming existing team (they want to proceed with previously selected team)
+    // 1. User confirmed AND we have new talents from this request, OR
+    // 2. User is confirming existing team (explicit "this team" etc.), OR
+    // 3. Strong confirmation with previous context (e.g. "confirm" after seeing a team - client has talents from prior response)
     const shouldShowForm = (isConfirmation && recommendedTalents.length > 0) || 
-                          (isConfirmation && isConfirmingExistingTeam && hasPreviousAssistantMessages);
+                          (isConfirmation && isConfirmingExistingTeam && hasPreviousAssistantMessages) ||
+                          (matchesStrongConfirmation && hasPreviousAssistantMessages);
     
     console.log('[AI Talent Search] Confirmation detection:', {
       userMessage: userMessageLower,

@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { OrganizationBasicForm } from "./OrganizationBasicForm";
 import { OrganizationSizeForm } from "./OrganizationSizeForm";
 import { TezzeractButton } from "@/shared/components/ui/TezzeractButton";
@@ -21,15 +20,9 @@ export function ChatMessage({ role, content, type = "text", onLoginClick }: Chat
   const navigate = useNavigate();
   const { team } = useTeamStore();
   
-  // Redirect to CreateMeetingPage if user is logged in and has team (for login_button type)
-  useEffect(() => {
-    if (type === 'login_button' && user && team.length > 0) {
-      const timer = setTimeout(() => {
-        navigate('/talent/create-meeting');
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [type, user, team.length, navigate]);
+  const handleContinueToMeeting = () => {
+    navigate('/talent/create-meeting');
+  };
   
   // Render different content based on message type
   const renderContent = () => {
@@ -41,20 +34,24 @@ export function ChatMessage({ role, content, type = "text", onLoginClick }: Chat
       case "login_button":
         // Don't show login button if user is already logged in
         if (user) {
-          // User is logged in, show success message
+          // User is logged in - show team confirmation and require user to confirm before redirect
           if (team.length > 0) {
+            const teamNames = team.map((t) => t.name).join(", ");
             return (
               <div className="space-y-3">
                 <p className="whitespace-pre-wrap" style={{ color: '#27272A' }}>
-                  Great! You're already logged in. Redirecting to meeting setup...
+                  Great! You&apos;re logged in. Your team: {teamNames}. Ready to set up your meeting with them?
                 </p>
+                <TezzeractButton onClick={handleContinueToMeeting} fullWidth={false}>
+                  Continue to meeting setup
+                </TezzeractButton>
               </div>
             );
           }
           return (
             <div className="space-y-3">
               <p className="whitespace-pre-wrap" style={{ color: '#27272A' }}>
-                You're already logged in! Continue with your team selection.
+                You&apos;re already logged in! Continue with your team selection.
               </p>
             </div>
           );

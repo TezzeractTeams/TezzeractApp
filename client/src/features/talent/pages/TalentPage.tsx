@@ -306,11 +306,20 @@ export default function TalentPage() {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/0b0f08c3-d177-414e-9c2d-ee1698ed7d28',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TalentPage.tsx:272',message:'completed branch entered',data:{user:!!user,hasLoginMsg:messages.some(m=>m.type==='login_button')},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'D'})}).catch(()=>{});
       // #endregion
-      // Form 2 submitted
+      // Form 2 submitted - show team confirmation in chat; redirect only when user clicks "Continue to meeting setup"
       if (user) {
-        // User is already logged in, remove any existing login_button messages and redirect
-        removeMessagesByType('login_button');
-        navigate('/talent/create-meeting');
+        // User is already logged in - add login_button so they see team confirmation and can confirm before redirect
+        const hasLoginMessage = messages.some((msg) => msg.type === 'login_button');
+        if (!hasLoginMessage) {
+          const loginMessage: ChatMessage = {
+            id: Date.now().toString(),
+            role: "assistant",
+            type: "login_button",
+            content: "Great! Now let's get onboard. Confirm your team and continue to meeting setup.",
+            timestamp: new Date(),
+          };
+          addMessage(loginMessage);
+        }
       } else {
         // User is not logged in, check if login message already exists
         const hasLoginMessage = messages.some((msg) => msg.type === 'login_button');
@@ -337,17 +346,14 @@ export default function TalentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, addMessage, user, navigate, removeMessagesByType]);
   
-  // Watch for auth changes - if user logs in after form completion, redirect to CreateMeetingPage
+  // When user logs in after form completion: keep login_button visible so they see team confirmation.
+  // Redirect happens only when user clicks "Continue to meeting setup" in chat.
   useEffect(() => {
-    if (user && currentStep === 'completed' && yourTeam.length > 0) {
-      // Remove login_button messages when user logs in
-      removeMessagesByType('login_button');
-      navigate('/talent/create-meeting');
-    } else if (user) {
-      // If user logs in at any point, remove any login_button messages
+    if (user && yourTeam.length === 0) {
+      // User logged in but has no team - remove login_button (nothing to confirm)
       removeMessagesByType('login_button');
     }
-  }, [user, currentStep, yourTeam.length, navigate, removeMessagesByType]);
+  }, [user, yourTeam.length, removeMessagesByType]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -357,9 +363,12 @@ export default function TalentPage() {
   };
 
   const handleAddToTeam = (talent: Talent) => {
-    // Not used - AI auto-selects talents
     if (!yourTeam.some((t) => t.id === talent.id)) {
       addToTeam(talent);
+      // Also add to recommendedTalents so it appears in "This is the best team for you"
+      if (!recommendedTalents.some((t) => t.id === talent.id)) {
+        setRecommendedTalents([...recommendedTalents, talent]);
+      }
     }
   };
 

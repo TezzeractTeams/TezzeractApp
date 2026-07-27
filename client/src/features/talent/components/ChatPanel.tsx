@@ -8,6 +8,7 @@ import { Loader2, Settings2, ArrowRight, Sparkles, Trash2 } from "lucide-react";
 import TezzeractTextLogo from "@/assets/images/TezzeractTextLogo.png";
 import sparklesImage from "@/assets/images/sparkles.png";
 import { useAuth } from "@/shared/contexts/AuthContext";
+import { useTeamStore } from "@/shared/stores/useTeamStore";
 
 
 interface Talent {
@@ -60,9 +61,11 @@ export function ChatPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
+  const { team } = useTeamStore();
   
-  // Filter out login_button messages if user is logged in
-  const filteredMessages = user 
+  // Filter out login_button only when user is logged in but has no team (nothing to confirm).
+  // When user is logged in with team, keep login_button so they see team confirmation and can click to continue.
+  const filteredMessages = user && team.length === 0
     ? messages.filter((msg) => msg.type !== 'login_button')
     : messages;
 

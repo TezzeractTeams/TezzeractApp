@@ -1,5 +1,4 @@
 import { useState, useEffect, useLayoutEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "@/shared/contexts/AuthContext";
 import { useTeamStore } from "@/shared/stores/useTeamStore";
@@ -16,7 +15,6 @@ interface LoginSidePanelProps {
 }
 
 export default function LoginSidePanel({ isOpen, onClose }: LoginSidePanelProps) {
-  const navigate = useNavigate();
   const { team } = useTeamStore();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -49,15 +47,12 @@ export default function LoginSidePanel({ isOpen, onClose }: LoginSidePanelProps)
     }
   }, [isOpen]);
 
-  // Redirect to CreateMeetingPage after successful login if team exists
+  // Close panel after successful login - redirect happens only when user confirms in chat
   useEffect(() => {
     if (user && team.length > 0 && isOpen) {
       onClose();
-      setTimeout(() => {
-        navigate("/talent/create-meeting");
-      }, 500);
     }
-  }, [user, team.length, isOpen, navigate, onClose]);
+  }, [user, team.length, isOpen, onClose]);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
