@@ -15,11 +15,17 @@ Four bands. The number tells you what kind of document it is.
 |---|---|---|
 | **00–07** | **Vision** — what Tezzeract is and why | Everyone |
 | **10–25** | **Technical foundations** — how it's built | Engineers |
-| **30–35** | **Strategy** — Kernel, IP, moat, scale | Founders, investors, leads |
+| **30–36** | **Strategy** — Kernel, IP, moat, scale, topology | Founders, investors, leads |
 | **40–45** | **Execution** — what to build now | The team, day to day |
 
 Bands 30–45 are the current spine. Bands 00–25 remain accurate for their subjects; 30–45
 reorganise and sequence them, they don't replace them.
+
+> ⭐ **Latest strategic decision:** [technical/36-distributed-topology-v3.md](technical/36-distributed-topology-v3.md)
+> — backend services split into independent repos/DBs per product (AI, Talk, Task, Team,
+> Contelli), one Identity service owns SSO and tenancy for all of them. Partially
+> supersedes [ADR-001](technical/10-decisions.md#adr-001) and
+> [ADR-015](technical/10-decisions.md#adr-015). ADRs 019–023.
 
 ---
 
@@ -54,7 +60,7 @@ it's what the current schema most directly contradicts.
 | ~~18~~ | ~~Delivery Plan v1~~ | **Superseded by [40](technical/40-revenue-first-plan.md)** |
 | 19 | [Scale Model](technical/19-scale-model.md) | What breaks first at 1M users |
 | 20 | [Carve-Out Readiness](technical/20-carve-out-readiness.md) | Selling one product: what it costs |
-| 21 | [CI/CD & Repo Strategy](technical/21-ci-cd.md) | One repo, ~10 deploy targets, the four guards |
+| 21 | [CI/CD & Repo Strategy](technical/21-ci-cd.md) | ⚠️ Scope narrowed by 019 — now the frontend + shared-package repos, not backends |
 | 22 | [Hosting](technical/22-hosting.md) | Domain map, request flow, cross-domain cookies |
 | 23 | [Open-Source Foundations](technical/23-open-source-foundations.md) | AGPL, tenancy conflict, adapter pattern |
 | 24 | [Headless Integration](technical/24-headless-integration.md) | Upstream as backend: mapping, provisioning |
@@ -70,6 +76,7 @@ it's what the current schema most directly contradicts.
 | 33 | [Substrate Strategy](technical/33-substrate-strategy.md) | Two implementations per substrate while AGPL is open |
 | 34 | [Stress Tests](technical/34-stress-tests.md) | Every decision pushed until it breaks |
 | ~~35~~ | ~~Delivery Plan v2~~ | **Superseded by [40](technical/40-revenue-first-plan.md)** |
+| 36 | [**Distributed Topology v3**](technical/36-distributed-topology-v3.md) ⭐ | Per-product backends, one SSO/Identity service, 7 risks + mitigations |
 
 ## 40–45 · Execution
 

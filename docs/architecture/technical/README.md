@@ -3,7 +3,19 @@
 > Part of the [Tezzeract Architecture](../README.md) set. Start with
 > [SUMMARY.md](../SUMMARY.md) if you haven't.
 
-Three bands: **10–25** foundations · **30–35** strategy · **40–45** execution.
+Three bands: **10–25** foundations · **30–36** strategy · **40–45** execution.
+
+## ⭐ Current spine — Distributed Topology (v3)
+
+> Written 2026-07-27. Backend services split into independent repos/DBs per product, one
+> Identity service owns SSO and tenancy for all of them. Partially supersedes
+> [ADR-001](10-decisions.md#adr-001) and [ADR-015](10-decisions.md#adr-015) on the exact
+> triggers those records named.
+
+**[36 · Distributed Topology v3](36-distributed-topology-v3.md)** — the topology diagram,
+all seven risks (SSO, tenancy fragmentation, agent isolation, distributed sagas, CORS/CSRF,
+contract drift, ops cost) each with a concrete mitigation, and the extraction sequencing
+that avoids a big-bang rewrite. Corresponding ADRs: **019–023**, in [10-decisions.md](10-decisions.md).
 
 ---
 
@@ -11,7 +23,7 @@ Three bands: **10–25** foundations · **30–35** strategy · **40–45** exec
 
 | # | Document | Contents |
 |---|---|---|
-| 10 | [**Decisions (ADRs)**](10-decisions.md) ⭐ | 18 records with cost and revisit trigger |
+| 10 | [**Decisions (ADRs)**](10-decisions.md) ⭐ | 23 records with cost and revisit trigger |
 | 11 | [System Architecture](11-system-architecture.md) | Services, request path, failure posture |
 | 12 | [Data Model](12-data-model.md) ⭐ | Executable DDL, RLS, migration order |
 | 13 | [Identity & SSO](13-identity-and-sso.md) | Tokens, OIDC flows, OrgContext, cross-org access |
@@ -38,6 +50,7 @@ Three bands: **10–25** foundations · **30–35** strategy · **40–45** exec
 | 33 | [Substrate Strategy](33-substrate-strategy.md) | Two implementations per substrate |
 | 34 | [Stress Tests](34-stress-tests.md) | Every decision pushed until it breaks |
 | ~~35~~ | ~~Delivery Plan v2~~ | ⚠️ **Superseded — use [40](40-revenue-first-plan.md)** |
+| 36 | [**Distributed Topology v3**](36-distributed-topology-v3.md) ⭐ | Per-product backends, one Identity/SSO service, 7 risks mitigated |
 
 ## 40–45 · Execution
 
@@ -54,24 +67,33 @@ Three bands: **10–25** foundations · **30–35** strategy · **40–45** exec
 
 ## The stack, settled
 
+> ⚠️ **This table describes the pre-distributed (single-Postgres) shape.** As of
+> [ADR-019](10-decisions.md#adr-019) / [36](36-distributed-topology-v3.md), backend rows
+> marked 🔀 below now apply **per product backend**, not to one shared instance. Frontend,
+> contracts, and agent-orchestration rows are largely unchanged in kind — see the note on
+> each row.
+
 | Layer | Choice | ADR |
 |---|---|---|
-| Monorepo | pnpm + Turborepo (+ separate infra & marketing repos) | [001](10-decisions.md) |
-| Backend | **Express now → NestJS at ~5 engineers**, Fastify adapter | [002](10-decisions.md), [016](10-decisions.md) |
-| Database | One Postgres, schema per module | [003](10-decisions.md) |
-| Tenancy | Shared DB + RLS, `organization_id` everywhere | [004](10-decisions.md) |
-| Identity | Supabase Auth behind Tezzeract Identity | [005](10-decisions.md) |
-| Frontend | Next.js public + Vite SPA app, both React | [006](10-decisions.md), [017](10-decisions.md) |
-| Request scope | Server-derived `OrgContext` | [007](10-decisions.md) |
-| Agent | Dedicated orchestrator service | [008](10-decisions.md) |
-| Contracts | Zod → OpenAPI + client + tools | [009](10-decisions.md) |
+| Frontend repo | Vite + React SPA, **frontend only** — no backend co-located | [006](10-decisions.md), [017](10-decisions.md), [019](10-decisions.md) |
+| Public web | Next.js, unchanged | [006](10-decisions.md) |
+| Backends 🔀 | **One repo + DB per product** (`ai.`/`talk.`/`task.`/`team.`/`contelli.tezzeract.com`) | [019](10-decisions.md) |
+| Backend framework | Express now → NestJS at ~5 engineers, Fastify adapter — per backend | [002](10-decisions.md), [016](10-decisions.md) |
+| Database 🔀 | One Postgres **per backend**, `organization_id` + RLS within each | [003](10-decisions.md), [004](10-decisions.md) — both scope-noted under [019](10-decisions.md#adr-019) |
+| Identity 🔀 | `auth.tezzeract.com` — sole owner of SSO + the tenancy graph; every other backend verifies tokens only | [005](10-decisions.md), [019](10-decisions.md), [020](10-decisions.md) |
+| Request scope | Server-derived `OrgContext`, now resolved from token claims across a network boundary | [007](10-decisions.md) |
+| Agent | Dedicated orchestrator (`ai.tezzeract.com`); forwards the user's own token, never mints its own | [008](10-decisions.md) |
+| Contracts | Zod → OpenAPI + client + tools; now published per-repo via `@tezzeract/contracts` | [009](10-decisions.md) |
+| Kernel SDK 🆕 | `@tezzeract/kernel-sdk` — mandatory dependency for `OrgContext`, CORS/CSRF, idempotent consumers | [020](10-decisions.md) |
 | Models | Provider-agnostic, routed by data class | [010](10-decisions.md), [45](45-model-selection.md) |
-| Events | Outbox → Redis Streams | [011](10-decisions.md) |
-| Realtime | Dedicated WS service (bridge, if substrate does fan-out) | [012](10-decisions.md) |
+| Events 🔀 | Outbox → **NATS JetStream**, mandatory per service before cross-module workflows ship | [022](10-decisions.md) (supersedes [011](10-decisions.md)) |
+| Isolation suite 🆕 | Federated across all backends; deploy-gating, 100% required | [021](10-decisions.md) |
+| Realtime | Dedicated WS service for Talk | [012](10-decisions.md) |
 | Vectors | pgvector, org-partitioned | [013](10-decisions.md) |
 | Billing | Stripe → local entitlements | [014](10-decisions.md) |
-| Composition | Build-time modules | [015](10-decisions.md) |
+| Frontend composition | Build-time modules — now applies to the frontend repo only, no co-located backends to compose against | [015](10-decisions.md), [019](10-decisions.md) |
 | API protocol | REST; tools are the agent interface | [018](10-decisions.md) |
+| Sagas 🆕 | Explicit per-workflow failure semantics, documented not assumed | [023](10-decisions.md) |
 
 ## The five that carry the most weight
 
@@ -86,9 +108,19 @@ Three bands: **10–25** foundations · **30–35** strategy · **40–45** exec
 5. **CI-enforced module boundaries** ([15 §1](15-api-and-modules.md)) — a documented rule is
    a suggestion; the build must reject the import.
 
+   > ⚠️ **This mechanism doesn't carry over mechanically to separate repos.**
+   > `dependency-cruiser` can only see imports inside one repo. Under the distributed
+   > topology ([019](10-decisions.md#adr-019)), the equivalent enforcement is: no
+   > service-to-service database access, ever ([020](10-decisions.md#adr-020)); the
+   > forbidden-field lint on tool schemas; and the federated isolation suite as a deploy
+   > gate ([021](10-decisions.md#adr-021)). Same principle, three different mechanisms,
+   > because there's no longer one build to reject the import at.
+
 ## Maintenance
 
-ADRs are **append-only** — supersede rather than edit, so the reasoning survives. Two
-reversals are already recorded and kept their history:
-[ADR-016](10-decisions.md) (NestJS deferred once team size was known) and
-[ADR-017](10-decisions.md) (an Astro proposal, withdrawn).
+ADRs are **append-only** — supersede rather than edit, so the reasoning survives. Notable
+reversals, each kept its history rather than being edited away:
+[ADR-016](10-decisions.md) (NestJS deferred once team size was known),
+[ADR-017](10-decisions.md) (an Astro proposal, withdrawn), and
+[ADR-019](10-decisions.md) (monorepo/build-time-composition scope partially reversed once
+real dedicated-team hiring made the original triggers fire).

@@ -41,6 +41,14 @@ user of every property.
 
 ## 3. CI/CD
 
+> ⚠️ Under [ADR-019](10-decisions.md#adr-019), this pipeline shape runs **per repo** now
+> (frontend, and each of the five backends independently) rather than once for everything.
+> `dependency-cruiser` below applies within a repo that still has multiple packages (the
+> frontend, and the shared `@tezzeract/*` package repos); it no longer polices backend-to-
+> backend boundaries, because those are now separate repos with no import path between them
+> at all — a stronger guarantee than a lint rule. See
+> [36](36-distributed-topology-v3.md) and [21-ci-cd.md](21-ci-cd.md).
+
 ```
 PR  → lint · typecheck · unit · dependency-cruiser · codegen-drift · migration-lint
     → preview deploy (ephemeral DB branch) · e2e smoke

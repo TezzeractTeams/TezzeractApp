@@ -1,7 +1,13 @@
 # Tezzeract Architecture — One Page
 
-> The whole architecture, current as of 2026-07-26. Read this first; follow links for depth.
+> The whole architecture, current as of 2026-07-27. Read this first; follow links for depth.
 > Full map: [README.md](README.md).
+
+> ⭐ **Topology update (2026-07-27):** backend services now split into independent
+> repos/DBs per product (AI, Talk, Task, Team, Contelli) — the Kernel below is still the
+> right *model*, but it is now a physically separate Identity/SSO service that every other
+> backend defers to, not a schema in one shared Postgres. Full reasoning:
+> [36-distributed-topology-v3.md](technical/36-distributed-topology-v3.md) · ADRs 019–023.
 
 ---
 
@@ -73,16 +79,17 @@ All three CI-enforced — that boundary is the IP story. → [30](technical/30-a
 
 | Layer | Choice | Note |
 |---|---|---|
-| Repo | pnpm + Turborepo monorepo | + separate `tezzeract-infra`, `tezzeract-marketing` |
-| Public web | Next.js | marketing owns it; **zero platform secrets** |
-| App shells | Vite + React SPA | shared `@tezzeract/ui` |
-| Backend | **Express now → NestJS at ~5 engineers** | logic in framework-free `*.service.ts` |
-| Contracts | Zod → OpenAPI + client + tools | |
-| Database | One Postgres, schema per module, RLS | `organization_id` on every tenant row |
+| Frontend repo | `app.tezzeract.com` — **frontend only**, Vite + React SPA | `/team` `/talk` `/task` `/contelli`; no backend code lives here |
+| Public web | `tezzeract.com` — Next.js, + `/talent` | marketing owns it; **zero platform secrets** |
+| Backends | **One repo + DB per product** — `ai.` `talk.` `task.` `team.` `contelli.tezzeract.com` | independent deploys; own the split's whole complexity trade → [36](technical/36-distributed-topology-v3.md) |
+| Identity | **`auth.tezzeract.com` — sole owner of SSO + tenancy graph** | every other backend verifies tokens only, never authenticates |
+| Contracts | `@tezzeract/contracts`, versioned, published per backend | codegen-drift + breaking-change CI gates, per repo |
+| Kernel SDK | `@tezzeract/kernel-sdk` — mandatory dependency | `OrgContext` resolution, CORS/CSRF, idempotent consumers — one implementation |
+| Events | NATS JetStream + mandatory per-service outbox | load-bearing before the first cross-module workflow ships |
+| Isolation | Federated suite, deploy-gating, across all backends | no tool ships to the agent catalog until it passes |
 | Vectors | pgvector, org-partitioned namespaces | pre-filter, never post-filter |
-| Identity | Supabase Auth behind Tezzeract Identity | the IdP-swap seam |
-| Agent | Own orchestrator; provider-agnostic | routed by data class |
-| Hosting | Vercel (web) · Fly (services) · Supabase | EU-first |
+| Agent | `ai.tezzeract.com`; provider-agnostic model routing | forwards the user's own token — never mints its own |
+| Hosting | Vercel (frontend) · per-backend infra · shared Terraform modules | EU-first |
 
 ## Core schema
 

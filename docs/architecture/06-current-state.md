@@ -3,6 +3,11 @@
 > Snapshot of `main` @ `82bcdc4`, taken 2026-07-26. Facts about what is in the repo
 > today, so vision documents can be read against reality. **Update this when it changes.**
 
+> Note: "Monorepo" below is accurate as today's literal repo state. The **target** shape
+> has since changed — [ADR-019](technical/10-decisions.md#adr-019) /
+> [36](technical/36-distributed-topology-v3.md) split backend services into their own
+> repos going forward. This snapshot describes what exists right now, not the direction.
+
 ---
 
 ## 1. Stack

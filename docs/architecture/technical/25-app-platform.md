@@ -195,6 +195,16 @@ For Tier 3 this stops being politeness and becomes a public API commitment.
 
 ## 8. CI impact
 
+> ⚠️ **Open question under [ADR-019](10-decisions.md#adr-019).** The reasoning below
+> assumed micro-apps live as packages in one monorepo alongside Contelli, Talk, etc. Under
+> the distributed topology, Contelli and Talk are now separate backends with their own
+> repos — it is not yet decided whether Tier 2 micro-apps (§3) live inside the frontend
+> repo (they're small, mostly UI-plus-a-schema), get their own tiny repos each, or attach
+> to whichever product backend they're most related to. This needs a decision before the
+> first micro-app ships under the new topology; flagging rather than guessing. The
+> **economics in §8b below are unaffected either way** — they're about hosting cost, not
+> repo shape.
+
 Micro-apps live in the monorepo as ordinary packages. Turborepo's affected-detection means
 `apps/attendance` only builds when it changes — thirty apps do not slow a Contelli PR.
 

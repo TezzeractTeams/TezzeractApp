@@ -56,6 +56,15 @@ apps/*     →  modules/*         ✅
 Enforced by `dependency-cruiser` in CI. A rule that is only in a document is a
 suggestion; the build must reject the import.
 
+> ⚠️ **Under [ADR-019](10-decisions.md#adr-019)**, product modules (Talent, Contelli, Talk,
+> etc.) are now separate backend repos, not `modules/*` packages in one repo —
+> `dependency-cruiser` can't see across repo boundaries, so it no longer does this job for
+> them. The guarantee is now stronger, not weaker: there is no import path between separate
+> repos at all. What replaces this rule in spirit: no service-to-service database access
+> ever, and every cross-backend call going through a verified token
+> ([36 §5](36-distributed-topology-v3.md)). This section's `modules/* → packages/*` shape
+> still applies as-is within the frontend repo and the shared package repos.
+
 ## 2. Two shells, one module
 
 ```ts

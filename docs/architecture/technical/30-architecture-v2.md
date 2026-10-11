@@ -61,9 +61,15 @@ distributed across the codebase."
 | Enterprise deferred to Phase 4 | **Seams from Phase 0** | Mixed GTM; retrofitting isolation is expensive |
 | Delivery optimised for shipping | **Optimised for a defensible asset at raise** | 12–18 month horizon |
 
-Everything else — NestJS on Fastify, one Postgres with schema-per-module, RLS, Zod
-codegen, monorepo, headless integration — survives the rethink. Those were stress-tested
-in [34](34-stress-tests.md) and hold.
+Everything else — NestJS on Fastify, RLS, Zod codegen, headless integration — survives the
+rethink unchanged. Those were stress-tested in [34](34-stress-tests.md) and hold.
+
+> ⚠️ **Updated 2026-07-27.** "One Postgres with schema-per-module" and "monorepo" — both
+> listed here as surviving unchanged — were subsequently scoped by
+> [ADR-019](10-decisions.md#adr-019): backend services now each own their own repo and
+> database. The *principles* these named (one authoritative tenancy store; ownership
+> boundaries a build can enforce) do survive; the physical shape does not. See
+> [36-distributed-topology-v3.md](36-distributed-topology-v3.md).
 
 ## 3. The Kernel in detail
 

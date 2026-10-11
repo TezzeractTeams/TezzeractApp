@@ -1,0 +1,6 @@
+
+# build copy of docs/, and unrelated audit material
+docs-site/content/
+docs-site/assets/
+"Website Audit/"
+Website*Audit/

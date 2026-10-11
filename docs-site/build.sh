@@ -11,8 +11,20 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-rm -rf content
-mkdir -p content
-cp -R ../docs/. content/
-
-echo "Assembled docs into ./content ($(find content -name '*.md' | wc -l | tr -d ' ') markdown files)"
+if [ -d ../docs ]; then
+  rm -rf content
+  mkdir -p content
+  cp -R ../docs/. content/
+  # Vault-only material — never published. discussions/ holds pricing and strategy notes;
+  # graph/ is ~800 generated notes; .obsidian is per-user config; Home.md links into the
+  # two above. See docs/Home.md.
+  rm -rf content/.obsidian content/graph content/discussions content/Home.md
+  echo "Assembled docs into ./content ($(find content -name '*.md' | wc -l | tr -d ' ') markdown files)"
+elif [ -d content ] && [ "$(find content -name '*.md' 2>/dev/null | wc -l | tr -d ' ')" != "0" ]; then
+  echo "Using prebuilt ./content ($(find content -name '*.md' | wc -l | tr -d ' ') markdown files)"
+else
+  echo "ERROR: No ../docs directory and ./content is empty." >&2
+  echo "For Git deploys: enable 'Include files outside of the Root Directory in the Build Step' in Vercel." >&2
+  echo "For CLI deploys: run ./build.sh locally, then npx vercel --prod --force" >&2
+  exit 1
+fi

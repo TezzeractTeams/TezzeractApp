@@ -10,9 +10,9 @@ Status legend: ✅ Accepted · 🔄 Provisional (revisit at named trigger) · �
 
 | # | Decision | Status | Revisit when |
 |---|---|---|---|
-| [001](#adr-001) | Monorepo + Turborepo | ✅ | CI > 20min warm; many external contributors; **still 1–2 devs at end of Phase 2** |
+| [001](#adr-001) | Monorepo + Turborepo | ✅ | *scope partially superseded by 019* |
 | [002](#adr-002) | NestJS on Fastify adapter | ✅ | *amended by 016* |
-| [003](#adr-003) | One Postgres, schema per module | ✅ | Residency or isolation contract |
+| [003](#adr-003) | One Postgres, schema per module | ✅ | *scope superseded by 019 — see note in ADR-003* |
 | [004](#adr-004) | Shared-DB tenancy + RLS | ✅ | Enterprise demands physical isolation |
 | [005](#adr-005) | Supabase Auth behind Tezzeract Identity | ✅ | Enterprise SAML/SCIM lands |
 | [006](#adr-006) | Next.js public + Vite SPA app | ✅ | *confirmed by 017* |
@@ -24,17 +24,30 @@ Status legend: ✅ Accepted · 🔄 Provisional (revisit at named trigger) · �
 | [012](#adr-012) | Dedicated WebSocket service | 🔄 | Substrate may do fan-out — see [24 §6](24-headless-integration.md) |
 | [013](#adr-013) | pgvector, org-partitioned | ✅ | >10M vectors or p95 > 200ms |
 | [014](#adr-014) | Stripe → local entitlements | ✅ | — |
-| [015](#adr-015) | Build-time module composition | 🔄 | Teams blocked on each other's release trains |
-| [016](#adr-016) | **Defer NestJS migration** | ✅ | 5+ engineers, or module-ownership collision |
-| [017](#adr-017) | **React retained; marketing isolated** | ✅ | A *measured* bottleneck in the app shell |
-| [018](#adr-018) | **REST, not GraphQL; tools are the agent interface** | ✅ | Public dev API with many third-party clients |
+| [015](#adr-015) | Build-time module composition | 🔄 | *scope partially superseded by 019* |
+| [016](#adr-016) | Defer NestJS migration | ✅ | 5+ engineers, or module-ownership collision |
+| [017](#adr-017) | React retained; marketing isolated | ✅ | A *measured* bottleneck in the app shell |
+| [018](#adr-018) | REST, not GraphQL; tools are the agent interface | ✅ | Public dev API with many third-party clients |
+| [019](#adr-019) | **Distributed backend topology — one repo/DB per product** | ✅ | Team contracts back toward 1–2 per product |
+| [020](#adr-020) | **Kernel client SDK mandatory, published centrally** | ✅ | Never, structurally |
+| [021](#adr-021) | **Federated isolation suite as deploy gate** | ✅ | Never below 100% pass rate |
+| [022](#adr-022) | **NATS JetStream + mandatory outbox** | ✅ | Volume/replay exceeds JetStream — evaluate Kafka |
+| [023](#adr-023) | **Explicit per-saga failure semantics** | ✅ | >5–10 distinct sagas — evaluate a workflow engine |
 
-Records 016–018 are the most recent and amend or confirm earlier ones. Read them before
-acting on 002, 006, or the API shape.
+Records 016–023 are the most recent. **019–023 are a coherent group** — the distributed
+topology decision and its four load-bearing mitigations, detailed in
+[36-distributed-topology-v3.md](36-distributed-topology-v3.md). Read 019 before acting on
+001, 003, or 015.
 
 ---
 
 ## ADR-001 — Monorepo with Turborepo ✅
+
+> **Scope superseded 2026-07-27 by [ADR-019](#adr-019).** Backend services now split into
+> independent repos, one per product (AI, Talk, Task, Team, Contelli). This record's
+> reasoning still holds for what remains together: the frontend, the Kernel/Identity
+> service, and the shared `@tezzeract/ui` / `kernel-sdk` / `contracts` packages. See
+> [36-distributed-topology-v3.md](36-distributed-topology-v3.md) for the full shape.
 
 **Decision.** Keep pnpm workspaces; add Turborepo for task orchestration and remote
 caching. Restructure to `packages/` · `modules/` · `apps/` · `services/`.
@@ -137,6 +150,15 @@ not a rewrite. The cost of deferring is near zero *provided* that discipline hol
 
 ## ADR-003 — One Postgres, schema per module ✅
 
+> **Superseded 2026-07-27 by [ADR-019](#adr-019).** The premise below — "database-per-module
+> now is premature" — was correct until real dedicated-team hiring made it not premature.
+> Each product backend now owns its own database. What survives unchanged: **the platform
+> tables (`users`/`organizations`/`memberships`/`entitlements`/`audit_log`) still live in
+> exactly one database** — it just belongs to `auth.tezzeract.com` now, not a shared
+> Postgres instance every module schema-shares. The "one authoritative tenancy store"
+> principle this ADR established is exactly what ADR-019 carries forward; only the
+> *physical* location changed. See [36 §1, §4](36-distributed-topology-v3.md).
+
 **Decision.** A single Postgres instance. Each module owns a schema: `platform`,
 `talent`, `contelli`, `talk`. Cross-schema foreign keys are permitted **only** into
 `platform`.
@@ -150,9 +172,21 @@ one backup story in the meantime.
 **Rejected.** Database-per-module now — premature, and it would force distributed
 transactions before we have the traffic to justify them.
 
+**In hindsight.** "Premature" was a statement about team size, not a permanent judgment —
+this is the ADR whose own logic argued for its later reversal once that changed.
+
 ---
 
 ## ADR-004 — Shared-database multi-tenancy with RLS ✅
+
+> **Scope clarified 2026-07-27 under [ADR-019](#adr-019) — not superseded.** This decision
+> was always about tenant-per-*row*, never tenant-per-*database* — that principle is
+> unchanged. What changed is the unit it applies within: under the distributed topology,
+> each product backend has its own database, and this ADR's rule (`organization_id` + RLS,
+> never schema/DB-per-tenant) applies **inside each of those databases independently**.
+> `auth.tezzeract.com`'s database additionally holds the authoritative tenancy graph itself
+> (see [ADR-003](#adr-003)'s note). Nothing below needs to change; read "the database" as
+> "whichever database this backend owns."
 
 **Decision.** `organization_id` on every tenant-scoped row, plus Postgres Row-Level
 Security. Not schema-per-tenant, not database-per-tenant.
@@ -414,6 +448,14 @@ availability or latency.
 
 ## ADR-015 — Build-time module composition 🔄
 
+> **Scope superseded 2026-07-27 by [ADR-019](#adr-019).** This ADR's trigger — *"separate
+> teams blocked on each other's release trains"* — has fired. It still applies in full to
+> `app.tezzeract.com` itself (frontend stays build-time-composed, no Module Federation);
+> what's new is that the frontend now has no backend co-located with it to compose against
+> in the first place — each product's backend is a fully separate service the frontend
+> calls over the network, not a module built into the same bundle. See
+> [36-distributed-topology-v3.md](36-distributed-topology-v3.md).
+
 **Decision.** Modules compose at build time as workspace packages with route-level lazy
 `import()`. No Module Federation yet.
 
@@ -423,3 +465,136 @@ problems we would be adopting before we have the problem they solve.
 
 **Revisit when.** Separate teams own separate modules and are blocked on each other's
 release trains. That is the trigger — not a date.
+
+---
+
+## ADR-019 — Distributed backend topology: one repo/DB per product, one Identity service ✅
+
+> Recorded 2026-07-27, after leadership finalized a longer-horizon direction. Full
+> reasoning, diagrams, and per-risk mitigations: [36-distributed-topology-v3.md](36-distributed-topology-v3.md).
+> **Partially supersedes [ADR-001](#adr-001) and [ADR-015](#adr-015)** — on the exact
+> triggers those records named as their own reversal conditions.
+
+**Decision.** `tezzeract.com` (public + `/talent`) stays as-is. `app.tezzeract.com` becomes
+**frontend-only** — no backend code in that repo. Each product — AI, Talk, Task, Contelli,
+Team — gets its own backend repo, own database, own subdomain
+(`ai./talk./task./team./contelli.tezzeract.com`). Exactly **one** service,
+`auth.tezzeract.com`, owns identity and the tenancy graph (`users`, `organizations`,
+`memberships`, `entitlements`, `audit_log`); every other backend verifies tokens against it
+and never authenticates a user itself.
+
+**Why now, not earlier.** ADR-001 and ADR-015 both named their own reversal triggers —
+*"many external contributors / dedicated teams per module"* and *"teams blocked on each
+other's release trains"* respectively. Real hiring plans for dedicated AI, data, and
+frontend engineering functions mean those triggers have fired. Talk's message-volume
+argument for its own datastore was independently valid regardless of team size.
+
+**What this is not.** Not "each backend runs its own login" — that was the version of this
+proposal that would have broken SSO, and is explicitly rejected in favor of one issuer,
+everyone else verify-only. See [36 §3](36-distributed-topology-v3.md#3-risk-1--sso-across-independently-run-backends).
+
+**Cost, stated plainly.** Ops floor rises roughly 3–5× (~$5–12k/month baseline vs.
+~$1.5–3.5k on the monolith Kernel approach, before inference). Requires a minimum viable
+platform function to exist *before* the split, not discovered as a gap after. Requires an
+event bus and outbox pattern to exist before the first cross-module workflow ships, not
+added later. Both detailed in [36 §6, §9](36-distributed-topology-v3.md).
+
+**Revisit if.** Team size contracts back toward 1–2 engineers per product surface, in which
+case the coordination overhead of five repos stops being worth what it buys.
+
+---
+
+## ADR-020 — Kernel client SDK is mandatory, published from the Identity repo ✅
+
+**Decision.** `@tezzeract/kernel-sdk` — token verification, `OrgContext` resolution, CORS/
+CSRF config, idempotent-consumer helpers — is a single shared package every backend takes
+as a dependency. No backend implements auth verification, tenant scoping, or event
+deduplication independently.
+
+**Why.** Distributed across five independently-built APIs, the guarantee that
+`organizationId` is structurally unrepresentable as a model input is only as strong as the
+worst team's implementation of it. Making correct behavior a property of a shared library —
+rather than a convention five teams must each remember — is the only version of this that
+survives deadline pressure. See [36 §5](36-distributed-topology-v3.md#5-risk-3--agent-isolation-across-five-independently-built-apis).
+
+**Enforcement.** A CI lint (`@tezzeract/kernel-contracts-lint`), run in every repo, fails
+the build if any tool or endpoint schema contains a field named `organizationId` / `orgId` /
+`tenantId` — the org must be injected server-side from the verified token, never accepted
+as a parameter.
+
+**Cost.** A cross-team dependency every backend must upgrade together when the SDK changes
+— versioned and changelogged like any shared library, owned by the platform function
+from [ADR-019](#adr-019).
+
+**Revisit if.** Never, structurally — this is the control the whole isolation guarantee
+rests on. What may change is *what* the SDK contains, not whether one must exist.
+
+---
+
+## ADR-021 — Federated isolation suite is a deploy gate, not a per-service test ✅
+
+**Decision.** One central harness seeds two organizations across all backends, auto-
+discovers each service's tool/endpoint catalog via a required introspection endpoint, and
+asserts zero cross-org visibility on every one of them. A new tool cannot enter the agent's
+catalog, and a service cannot deploy, until the aggregate suite has passed against it.
+
+**Why.** Five separate nightly test runs each proving their own service is safe does not
+prove the *system* is safe — the previous single-codebase isolation suite
+([21 §7](21-ci-cd.md)) doesn't survive the split as designed. The federation is what closes
+the gap where a new tool ships without anyone remembering to add cross-service coverage for
+it.
+
+**Cost.** A shared service with standing credentials to every backend's staging
+environment — itself a sensitive piece of infrastructure requiring its own access controls
+and audit trail.
+
+**Revisit if.** Never below 100% pass rate as a merge-blocking condition — there is no
+"known failure" state for this suite, matching the original per-service rule.
+
+---
+
+## ADR-022 — NATS JetStream event bus with mandatory per-service outbox ✅
+
+> Supersedes the provisional pick in [ADR-011](#adr-011) — Redis Streams was sized for a
+> monolith; five independently-owned services need real consumer groups and replay.
+
+**Decision.** NATS JetStream as the event bus. Every service publishing an event does so
+inside the same database transaction as the state change it describes (transactional
+outbox), relayed to the bus by a tailing process — never a direct publish outside the
+transaction.
+
+**Why.** Cross-module workflows (team-resize → billing, agent-driven actions spanning
+services) are now genuinely distributed and depend on this infrastructure existing to work
+at all, not as a later enhancement. The outbox pattern is what prevents "changed state but
+never published" and "published but the transaction rolled back," both materially more
+likely once services are truly separate. See
+[36 §6](36-distributed-topology-v3.md#6-risk-4--cross-module-workflows-become-genuinely-distributed).
+
+**Cost.** Real infrastructure to run and monitor, plus a schema-registry discipline
+(versioned, additive-only event contracts) that must be maintained alongside the API
+contracts from [ADR-009](#adr-009).
+
+**Revisit if.** Event volume or long-retention replay needs exceed what JetStream
+comfortably serves — the trigger to evaluate Kafka, not a default.
+
+---
+
+## ADR-023 — Explicit per-saga failure semantics, documented not assumed ✅
+
+**Decision.** Every cross-service workflow states, in writing, next to its implementation,
+which side is authoritative on partial failure. Default is **not** automatic rollback of
+user-facing state — e.g. a failed billing proration after a team resize alerts and retries
+billing; it does not revert the team change.
+
+**Why.** "Roll back the whole saga" is the default engineers reach for, and it is usually
+wrong for state a customer already sees and expects to hold. Deciding this per-saga, in
+advance, prevents an incident being the first time anyone thinks about it.
+
+**Mechanism.** Saga state tracked on the initiating record (a status column,
+`pending → complete` / `→ needs_attention`) with an alert on anything stuck past a defined
+window. A workflow engine (Temporal, Restate) is deliberately not adopted yet.
+
+**Revisit if.** Distinct multi-step sagas exceed roughly 5–10 — past that, hand-rolled state
+tracking gets error-prone enough that a workflow engine's overhead starts paying for itself.
+
+---

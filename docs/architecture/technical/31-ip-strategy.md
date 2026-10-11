@@ -89,6 +89,10 @@ license-audit:      # fails on any copyleft in Kernel dependencies
 
 kernel-boundary:    # Kernel must not import modules or substrate SDKs
   - dependency-cruiser --config .kernel-boundary.cjs
+  # Under ADR-019, the Kernel (auth.tezzeract.com / Identity) is its own repo, separate
+  # from every product backend — this check is now largely redundant with physical repo
+  # separation (there is no import path to a module's code at all), but kept as a
+  # belt-and-suspenders guard within the Kernel repo's own package boundaries.
 
 provenance:         # every commit maps to a signed CLA/assignment
   - verify-contributors --against ip-assignments.json

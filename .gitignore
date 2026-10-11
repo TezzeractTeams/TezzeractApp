@@ -39,3 +39,8 @@ lerna-debug.log*
 .DS_Store
 Thumbs.db
 
+# Obsidian — docs/ is opened in place as a vault. Per-user config and the generated
+# knowledge-graph notes stay local; the written docs are the only thing committed.
+docs/.obsidian/
+docs/graph/
+

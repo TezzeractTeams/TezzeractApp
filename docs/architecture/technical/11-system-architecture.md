@@ -3,6 +3,18 @@
 > The physical shape of Tezzeract. Decisions and their costs live in
 > [10-decisions.md](10-decisions.md); this document shows what we build.
 
+> ⚠️ **Superseded in shape, not in principle, by [ADR-019](10-decisions.md#adr-019) /
+> [36-distributed-topology-v3.md](36-distributed-topology-v3.md).** This document describes
+> a single gateway with modules-as-libraries in one Postgres — the pre-distributed
+> topology. Under the current direction: there is no single gateway; each product (AI,
+> Talk, Task, Team, Contelli) is its own backend, own repo, own database, reachable at its
+> own subdomain; and `services/identity` here corresponds to `auth.tezzeract.com` in the new
+> topology — the one service that still owns the tenancy graph everything else defers to.
+> The **request path (§3) and the agent path (§4) are still accurate in shape** — token
+> verification, `OrgContext` resolution, and org-injection into tool calls all work
+> identically, just across a network boundary between services instead of in-process
+> between modules of one gateway. Read §2 and §5 below with that in mind.
+
 ---
 
 ## 1. Context
@@ -100,6 +112,11 @@ The thread's org is fixed at creation. A request that spans orgs gets a disambig
 question, never a guess ([03 §5](../03-agent-layer.md)).
 
 ## 5. Data topology
+
+> ⚠️ Pre-distributed shape — see the banner at the top of this document. Under
+> [ADR-019](10-decisions.md#adr-019), `platform` is `auth.tezzeract.com`'s own database;
+> `talent`, `contelli`, and `talk` below are each a separate backend's own database, not
+> schemas in this one instance.
 
 One Postgres, four schemas:
 

@@ -160,32 +160,45 @@ A product whose SSO is paywalled changes the build-vs-buy maths entirely.
 
 ## 7. Repository strategy — the actual answer to your question
 
-The monorepo does **not** become unmanageable, because upstream code never enters it.
+> ⚠️ **Updated 2026-07-27 under [ADR-019](10-decisions.md#adr-019).** This section
+> originally argued the monorepo doesn't become unmanageable because upstream code never
+> enters it — true, but the repo shape underneath has since changed anyway: Talk and CRM
+> are now separate backends (`talk.tezzeract.com`, and CRM's own service), not
+> `modules/talk/` and `modules/crm/` packages inside one shared repo. The core argument
+> **still holds, one level up**: whichever repo owns Talk owns its Mattermost adapter
+> directly, and upstream code still never enters *that* repo either. Updated shape:
 
 ```
-tezzeract/                     monorepo (TypeScript) — unchanged
-├── modules/talk/              adapter + your UI
-├── modules/tasks/             adapter + your UI
-├── modules/crm/               adapter + your UI
-└── …
+talk-backend/                  its own repo — owns talk.tezzeract.com
+├── src/adapter/                Mattermost adapter — headless, unmodified upstream
+├── src/api/                    Talk's own API surface
+└── … its own DB, own CI, own deploy
 
-tezzeract-infra/               Terraform, deploy configs
+crm-backend/                   its own repo — owns crm.tezzeract.com (or team.tezzeract.com)
+└── src/adapter/                Twenty adapter, same shape
+
+tezzeract-infra/               Terraform, deploy configs — shared, per ADR-019 §9
 tezzeract-mattermost/          Only if forking — pinned upstream + patches
 tezzeract-twenty/              Only if forking
 ```
 
-Key points:
+Key points, updated:
 
-- **Deploying unmodified upstream needs no repo at all** — a pinned container image
-  reference in `tezzeract-infra` is sufficient.
-- A fork gets its own repo, with its own language toolchain and its own CI. Never inside
-  the monorepo: it would mean Go/Rust builds, a different licence boundary, and a
-  vendored upstream history polluting `git filter-repo` extraction.
-- Your monorepo stays pure TypeScript. Everything in [21-ci-cd.md](21-ci-cd.md) holds.
+- **Deploying unmodified upstream still needs no dedicated repo** — a pinned container
+  image reference in `tezzeract-infra` is sufficient, same as before.
+- **A fork still gets its own repo** — now no different in kind from Talk's own backend
+  repo, since Talk is already separate. The distinction that matters is still: never vendor
+  upstream source into a repo whose git history you might later need to `filter-repo` extract
+  for carve-out purposes.
+- **The adapter lives inside whichever backend owns that product** — `talk-backend`'s own
+  `src/adapter/`, not a shared location. It still consumes `@tezzeract/kernel-sdk` for
+  `OrgContext` and tenancy, same as every other backend under the new topology.
 
-**This actually strengthens the monorepo case.** The adapters are small, share
-`@tezzeract/ui` and `@tezzeract/identity`, and must stay consistent with each other — which
-is exactly what a monorepo is good at.
+**The monorepo-era argument ("adapters share `@tezzeract/ui` and stay consistent because
+that's what a monorepo is good at") now depends on `@tezzeract/kernel-sdk` and
+`@tezzeract/contracts` doing that job across repo boundaries instead** — see
+[36 §5, §8](36-distributed-topology-v3.md) for how that discipline is enforced without a
+shared repo to lean on.
 
 ## 8. Per-product assessment
 

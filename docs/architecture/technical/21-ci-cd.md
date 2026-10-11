@@ -3,6 +3,17 @@
 > One repository, many independently deployed targets. How that works, and the named
 > triggers at which we'd split.
 
+> ⚠️ **Scope narrowed 2026-07-27 by [ADR-019](10-decisions.md#adr-019).** The trigger this
+> document names for splitting — *"still 1–2 devs at the end of Phase 2"* not firing, i.e.
+> real dedicated teams — has fired. **Backend services are no longer in this repo**: AI,
+> Talk, Task, Team, and Contelli each have their own repo and their own CI/CD, per
+> [36-distributed-topology-v3.md](36-distributed-topology-v3.md). What this document still
+> describes accurately: the **frontend repo** (`app.tezzeract.com` + `tezzeract.com`) and
+> the **shared package repos** (`@tezzeract/ui`, `kernel-sdk`, `contracts`) — those remain
+> monorepo-shaped, or close to it, and the guards/patterns below (the four CI guards, the
+> isolation suite, migration discipline) still apply, just distributed across more repos
+> than one now. Read this as "the strategy for what didn't split," not "the whole system."
+
 ---
 
 ## 1. Decision: monorepo

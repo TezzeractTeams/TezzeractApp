@@ -197,17 +197,24 @@ times. Cross-region without replicas makes a well-built application feel broken.
 
 ## 11. Summary
 
+> ⚠️ **Two rows below predate [ADR-019](10-decisions.md#adr-019)** (the distributed backend
+> topology). "One Postgres, schema per module" and "Monorepo" were the pre-distributed
+> shape; both rows' *verdicts* still hold in substance (the scaling ceiling and the
+> "split when team size forces it" trigger were both correct), they just now apply per
+> backend rather than to one shared instance/repo. See
+> [36-distributed-topology-v3.md](36-distributed-topology-v3.md).
+
 | Decision | Verdict |
 |---|---|
 | NestJS on Fastify | ✅ Not the bottleneck at any tested scale |
-| One Postgres, schema per module | ✅ To ~25 gateway instances; then replicas |
+| One Postgres, schema per module 🔀 | ✅ To ~25 gateway instances; then replicas — now read per-backend-database |
 | Shared-DB tenancy + RLS | ✅ With session-GUC policies |
 | Union-view reads | ⚠️ **Ceiling at ~50 orgs — product boundary** |
 | Zod codegen | ✅ Build cost only |
 | Agent orchestrator | ⚠️ **Tiering mandatory, not optional** |
 | pgvector | ⚠️ **Pre-filter mandatory** |
 | Realtime bridge | ✅ Substrate fan-out is 5× cheaper |
-| Monorepo | ✅ Team size forces a split before tooling does |
+| Monorepo 🔀 | ✅ Team size forced the split — see [ADR-019](10-decisions.md#adr-019), it happened |
 | Headless substrate | ⚠️ Admin-API limits unmeasured |
 | EU-first single region | ✅ |
 
