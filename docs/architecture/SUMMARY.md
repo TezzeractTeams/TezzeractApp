@@ -11,11 +11,35 @@
 
 ---
 
-## What we're building
+## What we're building (in plain English)
 
-Tezzeract discovers talent and forms remote teams, sold as a subscription giving a business
-both a **workforce on demand** and a **modular AI-fronted toolset** to run it. Revenue is
-team augmentation: **$3k / 3-person · $5k / 5-person · $10k+ enterprise**, monthly.
+Tezzeract is an **AI-first team and toolset**: **Talent + Agents + Systems**.
+
+- **Talent**: a marketplace of vetted professionals. Describe what you need, get matched, form
+  a remote team, speak to an account manager. It is the front door and the base of the business.
+- **Agents**: AI assistants inside every tool that handle the admin (tasks, summaries, status)
+  so specialists focus on the work.
+- **Systems**: Tezzeract's own tools (Talk, Task, Team, CRM, Contelli) under one login,
+  shared by the customer's staff and the Tezzeract specialists working for them.
+
+### Pricing
+
+| Package | Price | Includes |
+|---|---|---|
+| **Starter** | **$99 / user / month** | Systems and agents for the customer's own staff; no talent |
+| **Teams (3)** | **$3,000 / month** | 3 specialists + systems |
+| **Teams (5)** | **$5,000 / month** | 5 specialists + systems |
+| **Enterprise** | **$10,000+ / month** | Larger or custom teams |
+
+A "user" is the customer's own staff; Tezzeract specialists never count as seats. Fair-use
+limits on agent usage and Teams seat allowances are still being decided. Full non-technical
+overview: [00 · Vision & Offering](00-vision-and-offering.md).
+
+### The technical shape
+
+Behind this is a modular platform: separate sellable products, one identity, and AI that
+can act across all of them without ever mixing one customer's data with another's. The rest
+of this page is that technical picture.
 
 ## The organising idea: the Kernel
 

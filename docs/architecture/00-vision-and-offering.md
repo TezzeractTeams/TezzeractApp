@@ -1,13 +1,98 @@
-# Tezzeract — North Star
+# Tezzeract — Vision & Offering
 
-> Canonical statement of what Tezzeract is. Every other document in `docs/architecture/`
-> exists to serve this one. If a design decision conflicts with this file, this file wins
-> or this file gets updated — never a silent divergence.
+> The canonical statement of what Tezzeract is. **Part A is written for everyone** (founders,
+> sales, investors, new hires). **Part B is the technical vision** the engineering docs serve.
+> If a design decision conflicts with this file, this file wins or gets updated — never a
+> silent divergence.
 
-Status: **vision captured 2026-07-26**, largely not yet implemented. See
+Status: **vision captured 2026-07-26, refined 2026-10-12**; largely not yet implemented. See
 [06-current-state.md](06-current-state.md) for the honest gap analysis.
 
 ---
+
+# Part A — For everyone
+
+## The idea in one paragraph
+
+Tezzeract is an **AI-fronted team and toolset for running a business**. A company can find
+vetted people on our talent marketplace, assemble them into a remote team, and work with
+that team inside Tezzeract's own tools, with AI agents handling the admin (updating tasks,
+summarising conversations, keeping everyone in sync). Three things work together:
+**Talent + Agents + Systems.**
+
+## The three parts
+
+| Part | What it means in practice |
+|---|---|
+| **Talent** | A searchable marketplace of vetted professionals. You describe what you need in plain language, get matched people, and speak to an account manager. Every team includes at least one Tezzeract team member. |
+| **Agents** | AI assistants built into every tool. They answer questions, create and update tasks, and do the routine coordination work so specialists spend their time on actual work. |
+| **Systems** | Tezzeract's own business tools: Talk (communication), Task (work tracking), Team (people and engagement management), CRM, and Contelli (social and content intelligence). One login for all of them. |
+
+The marketplace is where Tezzeract is based and remains the front door. It is also how many
+customers first find us.
+
+## Who it is for
+
+- **Businesses that need people** and want a ready, managed remote team rather than a hiring
+  process. They buy a **Teams package**.
+- **Businesses that need tools** and want AI-first systems for their own staff. They buy the
+  **Starter package**.
+- **Specialists** who join the marketplace and are placed on client teams.
+
+## What it costs
+
+| Package | Price | What you get |
+|---|---|---|
+| **Starter** | **$99 per user per month** | Access to Tezzeract's systems and agents for your own staff. No talent included. |
+| **Teams: 3 people** | **$3,000 / month** | A team of 3 specialists plus the Tezzeract systems |
+| **Teams: 5 people** | **$5,000 / month** | A team of 5 specialists plus the Tezzeract systems |
+| **Enterprise** | **From $10,000 / month** | Larger or customised teams, tailored terms |
+
+How to read this:
+
+- A **user (seat) is a member of the customer's own staff.** Tezzeract specialists working
+  for a customer never count as seats.
+- **Teams packages include the systems**, so a customer on Teams has the whole offering.
+- Tools can also be bought on their own (for example Contelli at contelli.co) without ever
+  touching the rest of Tezzeract.
+- Still being decided: fair-use limits on agent usage, how many customer seats a Teams
+  package bundles, and the price of extra seats. These will be recorded here once settled.
+
+## How it works for a customer
+
+1. **Discover**: search the marketplace by describing what you need.
+2. **Assemble**: pick people, form a team, speak to an account manager.
+3. **Work**: the team and your own staff share one workspace; agents keep tasks, messages
+   and status up to date automatically.
+4. **Grow**: add people, add tools, or move from Starter to a Teams package as needs grow.
+
+## What makes Tezzeract different
+
+- **One shared system for client and team.** The customer and the Tezzeract specialists work
+  in the same place, not in separate tools reconciled by email.
+- **Agents do the admin.** Specialists do not spend time updating project tools.
+- **One account everywhere.** A single sign-in across every Tezzeract product and website.
+- **A trust network that compounds.** Every successful engagement records who delivered
+  well together. That history cannot be scraped or copied, and it improves matching over
+  time. See [32 · Talent Graph](technical/32-talent-graph.md).
+
+## Where we are today
+
+| | Status |
+|---|---|
+| Talent marketplace | About 40% built: AI search chat, talent cards, team panel, call booking |
+| Contelli | Working product (social scheduling and dashboards) |
+| Talk, Task, Team, CRM | Not started; communication and tasks run on WhatsApp/Slack in the interim |
+| Platform foundations (accounts, organisations, billing) | Not started; the first build priority |
+
+## Naming note
+
+Describe the offering as an **AI-first team and toolset**. Do not call it an "ERP"; we aim
+to replace that category, not join it.
+
+---
+
+# Part B — The technical vision
 
 ## 1. What Tezzeract is
 

@@ -2,7 +2,7 @@
 - [Index](README.md)
 
 - <span class="group-label">Vision · 00–07</span>
-- [00 · North Star](00-north-star.md)
+- [00 · Vision & Offering](00-vision-and-offering.md)
 - [01 · Platform Topology](01-platform-topology.md)
 - [02 · Identity & Tenancy](02-identity-and-tenancy.md)
 - [03 · Agent Layer](03-agent-layer.md)

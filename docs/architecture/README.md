@@ -33,7 +33,7 @@ reorganise and sequence them, they don't replace them.
 
 | # | Document | Settles |
 |---|---|---|
-| 00 | [North Star](00-north-star.md) | What Tezzeract is; the seven non-negotiables |
+| 00 | [Vision & Offering](00-vision-and-offering.md) | What Tezzeract is, who it is for, what it costs, and the seven non-negotiables |
 | 01 | [Platform Topology](01-platform-topology.md) | Modules as independently sellable apps |
 | 02 | [Identity & Tenancy](02-identity-and-tenancy.md) ⭐ | SSO, orgs, memberships, roles, AI isolation |
 | 03 | [Agent Layer](03-agent-layer.md) | Cross-module tool calling; org-bound threads |
