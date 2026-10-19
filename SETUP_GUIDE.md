@@ -27,10 +27,10 @@ Get these from your Supabase Dashboard:
 
 ### Step 1: Create Server `.env` File
 
-Create a file at `server/.env`:
+Create a file at `services/gateway/.env`:
 
 ```bash
-cd server
+cd services/gateway
 touch .env
 ```
 
@@ -58,10 +58,10 @@ JWT_REFRESH_SECRET=any-random-string-here
 
 ### Step 2: Create Client `.env.local` File
 
-Create a file at `client/.env.local`:
+Create a file at `apps/tezzeract-app/.env.local`:
 
 ```bash
-cd client
+cd apps/tezzeract-app
 touch .env.local
 ```
 
@@ -112,7 +112,7 @@ If you already have your Supabase credentials, run this:
 
 ```bash
 # In the server directory
-cd server
+cd services/gateway
 cat > .env << 'EOF'
 PORT=5001
 CLIENT_URL=http://localhost:3000
@@ -161,17 +161,17 @@ After setting up, verify your configuration:
 
 1. **Check server `.env` exists:**
    ```bash
-   ls server/.env
+   ls services/gateway/.env
    ```
 
 2. **Check client `.env.local` exists:**
    ```bash
-   ls client/.env.local
+   ls apps/tezzeract-app/.env.local
    ```
 
 3. **Start the server:**
    ```bash
-   cd server
+   cd services/gateway
    pnpm dev
    ```
    
@@ -185,7 +185,7 @@ After setting up, verify your configuration:
 
 4. **Start the client:**
    ```bash
-   cd client
+   cd apps/tezzeract-app
    pnpm dev
    ```
 
@@ -194,7 +194,7 @@ After setting up, verify your configuration:
 ## 🆘 Troubleshooting
 
 ### "Missing Supabase environment variables"
-- Make sure `.env` file exists in `server/` directory
+- Make sure `.env` file exists in `services/gateway/` directory
 - Check that variable names are correct (no typos)
 - Restart the server after creating/updating `.env`
 

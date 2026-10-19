@@ -7,14 +7,14 @@ This guide explains how to set up OAuth integrations for connecting your app to 
 1. **Database Setup**: Run the migration to create the `platform_connections` table:
    ```sql
    -- Run this in your Supabase SQL editor
-   -- File: server/migrations/create_platform_connections.sql
+   -- File: services/gateway/migrations/create_platform_connections.sql
    ```
 
-2. **Environment Variables**: Add the following to your `server/.env` file:
+2. **Environment Variables**: Add the following to your `services/gateway/.env` file:
 
 ## 🔑 Required Environment Variables
 
-Add these to your `server/.env` file:
+Add these to your `services/gateway/.env` file:
 
 ```env
 # Server Configuration
@@ -120,13 +120,13 @@ The `platform_connections` table stores OAuth tokens and connection status:
 
 1. Start your server:
    ```bash
-   cd server
+   cd services/gateway
    pnpm dev
    ```
 
 2. Start your client:
    ```bash
-   cd client
+   cd apps/tezzeract-app
    pnpm dev
    ```
 
@@ -148,7 +148,7 @@ The `platform_connections` table stores OAuth tokens and connection status:
 ## 🐛 Troubleshooting
 
 ### "OAuth credentials not configured"
-- Check that all required environment variables are set in `server/.env`
+- Check that all required environment variables are set in `services/gateway/.env`
 - Restart the server after adding environment variables
 
 ### "Invalid redirect URI"

@@ -6,9 +6,14 @@ A modern multi-tab platform built with React, Express, and TypeScript. Features 
 
 ```
 TezzeractApp/
-├── client/              # React + Vite frontend
-├── server/              # Express backend
-├── shared/              # Shared TypeScript types
+├── apps/
+│   └── tezzeract-app/   # React + Vite frontend (@tezzeract/tezzeract-app)
+├── services/
+│   └── gateway/         # Express API (@tezzeract/gateway)
+├── packages/
+│   └── shared/          # Shared TypeScript types (@tezzeract/shared)
+├── modules/             # Module placeholders (Stage 2 extraction)
+├── turbo.json           # Turborepo task orchestration
 └── package.json         # Root workspace config
 ```
 
@@ -30,8 +35,8 @@ TezzeractApp/
 - Zod (validation)
 
 **Monorepo:**
-- pnpm workspaces
-- Shared types between client/server
+- pnpm workspaces + Turborepo
+- Shared types between app and gateway
 
 ## 🚀 Getting Started
 
@@ -50,7 +55,7 @@ pnpm install
 
 2. **Set up environment variables:**
 
-Create `server/.env` file (see `ENV_EXAMPLE.md` for template):
+Create `services/gateway/.env` file (see `ENV_EXAMPLE.md` for template):
 ```env
 PORT=5000
 CLIENT_URL=http://localhost:3000
@@ -72,10 +77,10 @@ This will start:
 **Run individually:**
 ```bash
 # Frontend only
-pnpm dev:client
+pnpm dev:app
 
 # Backend only
-pnpm dev:server
+pnpm dev:gateway
 ```
 
 ### Building for Production
@@ -120,14 +125,14 @@ pnpm build
 
 ## 📁 Project Structure
 
-### Client Structure
+### App Structure
 ```
-client/
+apps/tezzeract-app/
 ├── src/
 │   ├── features/           # Feature-based organization
 │   │   ├── auth/          # Login, signup
 │   │   ├── talent/        # Talent search pages
-│   │   ├── social/        # Social media pages
+│   │   ├── social/        # Social media pages (Contelli)
 │   │   └── chat/          # Chat pages
 │   ├── shared/
 │   │   ├── components/    # Reusable UI components
@@ -137,9 +142,9 @@ client/
 │   └── main.tsx           # Entry point
 ```
 
-### Server Structure
+### Gateway Structure
 ```
-server/
+services/gateway/
 ├── src/
 │   ├── routes/            # API routes
 │   ├── controllers/       # Business logic
@@ -159,11 +164,11 @@ server/
 
 ### Adding a New Feature
 
-1. Create feature folder in `client/src/features/`
+1. Create feature folder in `apps/tezzeract-app/src/features/`
 2. Add routes in `App.tsx`
-3. Create API endpoints in `server/src/routes/`
-4. Add controllers in `server/src/controllers/`
-5. Define types in `shared/types/`
+3. Create API endpoints in `services/gateway/src/routes/`
+4. Add controllers in `services/gateway/src/controllers/`
+5. Define types in `packages/shared/types/`
 
 ### API Endpoints
 
@@ -218,6 +223,8 @@ This is a private project. Contact the team for contribution guidelines.
 Proprietary - All rights reserved
 
 ## 🔄 Recent Updates
+
+**July 2026** — Monorepo Stage 1: restructured to `apps/`, `services/`, `packages/`, `modules/` with Turborepo. Vercel deploy root directory is now `apps/tezzeract-app`.
 
 **November 11, 2025** - Project structure refined and documentation updated
 

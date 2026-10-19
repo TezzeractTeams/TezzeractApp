@@ -9,7 +9,7 @@
 
 | Layer | Actual |
 |---|---|
-| Monorepo | pnpm workspaces — `client/`, `server/`, `shared/` |
+| Monorepo | pnpm workspaces + Turborepo — `apps/tezzeract-app/`, `services/gateway/`, `packages/shared/` |
 | Frontend | React 18, Vite, TypeScript, Tailwind, React Router v6, Zustand |
 | Backend | Express + TypeScript, ESM (`.js` import specifiers) |
 | Auth | **Supabase Auth** |
@@ -18,7 +18,7 @@
 | Deploy | Vercel (client, `vercel.json` present) |
 
 > ⚠️ Root `ARCHITECTURE.md` documents a bespoke JWT access/refresh token scheme. **The
-> code does not do this** — it uses Supabase Auth (`server/src/middleware/supabase.middleware.ts`).
+> code does not do this** — it uses Supabase Auth (`services/gateway/src/middleware/supabase.middleware.ts`).
 > Treat that document as historical.
 
 ## 2. Branches
@@ -31,9 +31,9 @@ work exists outside `main`.
 
 | Module | Path | State |
 |---|---|---|
-| Talent | `client/src/features/talent/` | Most complete — AI chat, talent cards, team panel, meeting booking, org onboarding forms |
-| Contelli (`social`) | `client/src/features/social/` | Dashboard, calendar, suggestions, settings; real OAuth to Google/Meta/Twitter; scheduled publishing cron |
-| Chat | `client/src/features/chat/` | Stub — `chat.controller.ts` is 44 lines of mock channels/messages |
+| Talent | `apps/tezzeract-app/src/features/talent/` | Most complete — AI chat, talent cards, team panel, meeting booking, org onboarding forms |
+| Contelli (`social`) | `apps/tezzeract-app/src/features/social/` | Dashboard, calendar, suggestions, settings; real OAuth to Google/Meta/Twitter; scheduled publishing cron |
+| Chat | `apps/tezzeract-app/src/features/chat/` | Stub — `chat.controller.ts` is 44 lines of mock channels/messages |
 | Home / Auth | `features/home`, `features/auth` | Landing, login, Google OAuth, side panel |
 
 **Contelli is branded but not renamed in code** — `/api/social`, `features/social/`,
@@ -85,7 +85,7 @@ Notable:
 
 ## 7. The agent today
 
-`server/src/controllers/aiTalentSearch.controller.ts` (603 lines):
+`services/gateway/src/controllers/aiTalentSearch.controller.ts` (603 lines):
 - One Gemini call with a large few-shot prompt.
 - Model instructed to emit `RESPONSE:` / `ROLES:` / `SKILLS:`; server regex-parses it,
   with a **fallback regex** for when the primary format fails.

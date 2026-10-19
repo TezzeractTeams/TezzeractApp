@@ -11,7 +11,7 @@ architecture on one page.
 
 The previous contents of this file described a **bespoke JWT access/refresh token scheme**
 that the codebase does not implement — authentication uses **Supabase Auth**
-([`server/src/middleware/supabase.middleware.ts`](server/src/middleware/supabase.middleware.ts)).
+([`services/gateway/src/middleware/supabase.middleware.ts`](services/gateway/src/middleware/supabase.middleware.ts)).
 It had drifted far enough to actively mislead anyone onboarding, so it has been replaced
 with this pointer. The original is preserved in git history.
 

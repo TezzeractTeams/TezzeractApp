@@ -10,7 +10,7 @@ The app now shows a helpful error message instead of a white screen if the Clerk
 
 ### Step 1: Check Your `.env` File
 
-Make sure you have a `.env` file in the **`client/`** directory with the following content:
+Make sure you have a `.env` file in the **`apps/tezzeract-app/`** directory with the following content:
 
 ```env
 # Clerk Authentication
@@ -22,7 +22,7 @@ VITE_API_URL=http://localhost:5001/api
 
 **Important Notes:**
 - The file must be named exactly `.env` (with the dot at the beginning)
-- It must be in the `client/` directory, NOT the root directory
+- It must be in the `apps/tezzeract-app/` directory, NOT the root directory
 - Replace `pk_test_your_actual_key_here` with your actual Clerk publishable key
 - Variable names MUST start with `VITE_` for Vite to expose them
 
@@ -41,7 +41,7 @@ After adding the `.env` file, you MUST restart the dev server:
 # Stop the current server (Ctrl+C)
 # Then restart:
 cd "/Users/wehan/Documents/Tezzeract/Tezzeract AI/TezzeractApp"
-pnpm --filter client dev
+pnpm dev:app
 ```
 
 **Important:** Vite only reads `.env` files on startup, so changes require a restart.
@@ -60,7 +60,7 @@ pnpm --filter client dev
 lsof -ti:3000 | xargs kill -9
 
 # Or use a different port
-pnpm --filter client dev --port 3001
+pnpm dev:app --port 3001
 ```
 
 ### Issue 3: Node Modules Issues
@@ -80,7 +80,7 @@ pnpm install
 **Solution:**
 ```bash
 # Clear Vite cache
-cd client
+cd apps/tezzeract-app
 rm -rf node_modules/.vite
 pnpm dev
 ```
@@ -107,7 +107,7 @@ After following the steps above, you should see:
 
 Before asking for help, verify:
 
-- [ ] `.env` file exists in `client/` directory
+- [ ] `.env` file exists in `apps/tezzeract-app/` directory
 - [ ] `VITE_CLERK_PUBLISHABLE_KEY` is set in `.env`
 - [ ] Key starts with `pk_test_` or `pk_live_`
 - [ ] Dev server was restarted after adding `.env`
@@ -140,11 +140,11 @@ Make sure both servers are running:
 ```bash
 # Terminal 1 - Backend
 cd "/Users/wehan/Documents/Tezzeract/Tezzeract AI/TezzeractApp"
-pnpm --filter server dev
+pnpm dev:gateway
 # Should show: 🚀 Server running on http://localhost:5001
 
 # Terminal 2 - Frontend  
-pnpm --filter client dev
+pnpm dev:app
 # Should show: VITE ready in XXXms
 # Local: http://localhost:3000
 ```
@@ -155,14 +155,16 @@ pnpm --filter client dev
 
 ```
 TezzeractApp/
-├── client/
-│   ├── .env                    ← Add your Clerk key here!
-│   ├── src/
-│   │   └── main.tsx           ← Now shows helpful error
-│   └── package.json
-└── server/
-    ├── .env                    ← Backend env vars
-    └── src/
+├── apps/
+│   └── tezzeract-app/
+│       ├── .env                    ← Add your Clerk key here!
+│       ├── src/
+│       │   └── main.tsx           ← Now shows helpful error
+│       └── package.json
+└── services/
+    └── gateway/
+        ├── .env                    ← Backend env vars
+        └── src/
 ```
 
 ---

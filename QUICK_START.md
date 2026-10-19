@@ -125,17 +125,17 @@ curl -X POST http://localhost:5000/api/auth/login \
 ## 📂 Key Files to Edit
 
 ### Add New Page
-1. Create component in `client/src/features/[feature]/pages/`
-2. Add route in `client/src/App.tsx`
+1. Create component in `apps/tezzeract-app/src/features/[feature]/pages/`
+2. Add route in `apps/tezzeract-app/src/App.tsx`
 
 ### Add New API Endpoint
-1. Create route in `server/src/routes/`
-2. Create controller in `server/src/controllers/`
-3. Add to `server/src/server.ts`
+1. Create route in `services/gateway/src/routes/`
+2. Create controller in `services/gateway/src/controllers/`
+3. Add to `services/gateway/src/server.ts`
 
 ### Add Shared Type
-1. Edit `shared/types/index.ts`
-2. Import in client/server as needed
+1. Edit `packages/shared/types/index.ts`
+2. Import in app/gateway as needed
 
 ## 🎯 Architecture Decisions
 
@@ -175,8 +175,8 @@ pnpm install
 ### TypeScript Errors
 ```bash
 # Rebuild TypeScript
-pnpm --filter client build
-pnpm --filter server build
+pnpm --filter @tezzeract/tezzeract-app build
+pnpm --filter @tezzeract/gateway build
 ```
 
 ## 📞 Need Help?

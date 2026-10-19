@@ -40,7 +40,7 @@ The comprehensive social media analytics dashboard from `tezzeractDash` has been
 ## 📁 File Structure
 
 ```
-client/src/
+apps/tezzeract-app/src/
 ├── features/social/
 │   ├── components/
 │   │   ├── MetricCard.tsx           # Dashboard metric cards
@@ -62,7 +62,7 @@ client/src/
 │
 └── App.tsx                          # Updated routing
 
-server/src/
+services/gateway/src/
 ├── controllers/
 │   └── social.controller.ts         # Backend API logic
 └── routes/
@@ -74,7 +74,7 @@ server/src/
 ### 1. Start the Backend Server
 
 ```bash
-cd server
+cd services/gateway
 npm run dev
 ```
 
@@ -83,7 +83,7 @@ The server will run on `http://localhost:5001`
 ### 2. Start the Frontend Client
 
 ```bash
-cd client
+cd apps/tezzeract-app
 npm run dev
 ```
 
@@ -270,7 +270,7 @@ React Component Update
 ### Charts not rendering?
 Make sure `recharts` is installed:
 ```bash
-cd client && npm install recharts
+cd apps/tezzeract-app && npm install recharts
 ```
 
 ### API calls failing?
@@ -282,7 +282,7 @@ Check that:
 ### Types errors?
 Rebuild the TypeScript:
 ```bash
-cd server && npm run build
+cd services/gateway && npm run build
 ```
 
 ## 📚 Tech Stack

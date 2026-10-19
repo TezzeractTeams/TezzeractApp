@@ -6,13 +6,13 @@ I've successfully integrated Supabase with your TezzeractApp! Here's what was im
 
 ### Backend (Server)
 1. ✅ Added `@supabase/supabase-js` to dependencies
-2. ✅ Created Supabase config file (`server/src/config/supabase.ts`)
+2. ✅ Created Supabase config file (`services/gateway/src/config/supabase.ts`)
 3. ✅ Updated talent controller to fetch from Supabase database
 4. ✅ Added search and filter functionality
 5. ✅ Created CRUD endpoints for talents
 
 ### Frontend (Client)
-1. ✅ Created talent service (`client/src/shared/services/talentService.ts`)
+1. ✅ Created talent service (`apps/tezzeract-app/src/shared/services/talentService.ts`)
 2. ✅ Updated TalentPage to use real API data
 3. ✅ Added search functionality that queries the database
 
@@ -25,7 +25,7 @@ I've successfully integrated Supabase with your TezzeractApp! Here's what was im
 cd "/Users/wehan/Documents/Tezzeract/Tezzeract AI/TezzeractApp"
 
 # Install server dependencies
-cd server
+cd services/gateway
 pnpm install
 
 # Install client dependencies (if needed)
@@ -38,7 +38,7 @@ pnpm install
 Create a `.env` file in the `server` directory:
 
 ```bash
-cd server
+cd services/gateway
 cat > .env << 'EOF'
 PORT=5001
 CLIENT_URL=http://localhost:3000
@@ -77,11 +77,11 @@ Make sure your `talents` table in Supabase has these columns:
 
 ```bash
 # Terminal 1 - Start the server
-cd server
+cd services/gateway
 pnpm dev
 
 # Terminal 2 - Start the client
-cd client
+cd apps/tezzeract-app
 pnpm dev
 ```
 
@@ -161,7 +161,7 @@ curl "http://localhost:5001/api/talent/talents?minExperience=3&maxExperience=7"
 4. Talents table exists in Supabase
 
 ### Issue: "CORS Error"
-**Solution:** Server is configured to allow `http://localhost:3000`. If using a different port, update `CLIENT_URL` in server/.env
+**Solution:** Server is configured to allow `http://localhost:3000`. If using a different port, update `CLIENT_URL` in `services/gateway/.env`
 
 ### Issue: "No talents showing"
 **Solution:** 

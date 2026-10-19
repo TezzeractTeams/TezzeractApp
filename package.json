@@ -4,18 +4,23 @@
   "description": "Multi-tab platform with Talent Search, Social Media, and Chat",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"pnpm --filter client dev\" \"pnpm --filter server dev\"",
-    "dev:client": "pnpm --filter client dev",
-    "dev:server": "pnpm --filter server dev",
-    "build": "pnpm --filter client build && pnpm --filter server build",
-    "build:client": "pnpm --filter client build",
-    "build:server": "pnpm --filter server build"
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "dev:app": "pnpm --filter @tezzeract/tezzeract-app dev",
+    "dev:gateway": "pnpm --filter @tezzeract/gateway dev",
+    "build:app": "pnpm --filter @tezzeract/tezzeract-app build",
+    "build:gateway": "pnpm --filter @tezzeract/gateway build"
   },
-  "keywords": ["monorepo", "react", "express", "typescript"],
+  "keywords": [
+    "monorepo",
+    "react",
+    "express",
+    "typescript"
+  ],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.15.1",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "turbo": "^2.10.7"
   }
 }
