@@ -1,5 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { verifyAccessToken } from '../utils/oidc.js';
+
+async function authFromOidcCookie(req: Request): Promise<boolean> {
+  const accessToken = req.cookies?.access_token;
+  if (!accessToken || typeof accessToken !== 'string') {
+    return false;
+  }
+  try {
+    const claims = await verifyAccessToken(accessToken);
+    req.auth = {
+      userId: typeof claims.sub === 'string' ? claims.sub : '',
+      email: typeof claims.email === 'string' ? claims.email : undefined,
+      ...claims,
+    };
+    return Boolean(req.auth.userId);
+  } catch {
+    return false;
+  }
+}
 
 // Extend Express Request type to include auth
 declare global {
@@ -37,6 +56,10 @@ const getSupabaseClient = () => {
  * Middleware that requires authentication (blocks if not authenticated)
  */
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
+  if (await authFromOidcCookie(req)) {
+    return next();
+  }
+
   const supabase = getSupabaseClient();
   if (!supabase) {
     console.warn('[Auth] requireAuth bypassed - Supabase not configured');
@@ -76,6 +99,10 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
  * Middleware that optionally checks for authentication (doesn't block)
  */
 export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
+  if (await authFromOidcCookie(req)) {
+    return next();
+  }
+
   const supabase = getSupabaseClient();
   if (!supabase) {
     return next();

@@ -1,7 +1,8 @@
 import axios, { AxiosInstance } from 'axios';
 import { supabase } from './supabase';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+// Default to same-origin `/api` so HttpOnly OIDC cookies work via the Vite proxy in dev.
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 /**
  * Create an axios instance with authentication
@@ -13,12 +14,13 @@ export const createAuthenticatedAxios = (
 ): AxiosInstance => {
   const instance = axios.create({
     baseURL: API_URL,
+    withCredentials: true,
     headers: {
       'Content-Type': 'application/json',
     },
   });
 
-  // Add auth token to all requests
+  // OIDC session uses HttpOnly cookies; attach Supabase Bearer only when present.
   instance.interceptors.request.use(
     async (config) => {
       const token = await getToken();

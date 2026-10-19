@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/ui/Input";
 import { ArrowRight, Plus, Settings2, Loader2 } from "lucide-react";
+import { useOidcSession } from "@/shared/hooks/useOidcSession";
 
 
 export default function HomePage() {
+  const { authenticated, loading: oidcLoading } = useOidcSession();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -35,7 +37,26 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex flex-col bg-[#010101] bg-[url('/Tezzeract_3d_bg.webp')] bg-no-repeat bg-[center_10rem] h-[100vh] justify-center">
+    <div className="flex flex-col bg-[#010101] bg-[url('/Tezzeract_3d_bg.webp')] bg-no-repeat bg-[center_10rem] h-[100vh] justify-center relative">
+      {!oidcLoading && (
+        <div className="absolute top-6 right-8">
+          {authenticated ? (
+            <a
+              href="/auth/logout"
+              className="text-white/90 text-sm font-medium hover:text-white underline"
+            >
+              Sign out
+            </a>
+          ) : (
+            <a
+              href="/auth/login"
+              className="text-white/90 text-sm font-medium hover:text-white underline"
+            >
+              Sign in
+            </a>
+          )}
+        </div>
+      )}
       <h1 className="text-white text-center text-7xl font-thin mb-8">
         Start exploring talent,
         <br /> form Talent & Start Growing!

@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 
 // Load environment variables BEFORE importing middleware that uses them
@@ -13,10 +14,14 @@ import chatRoutes from './routes/chat.routes.js';
 import aiTalentSearchRoutes from './routes/aiTalentSearch.routes.js';
 import organizationRoutes from './routes/organization.routes.js';
 import meetingRoutes from './routes/meeting.routes.js';
+import oidcRoutes from './routes/oidc.routes.js';
+import { getMe } from './controllers/me.controller.js';
 import { startScheduledPostsCron } from './jobs/scheduledPostsCron.js';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(cors({
@@ -25,6 +30,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Request logging
 app.use((req, res, next) => {
@@ -43,6 +49,9 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/ai', aiTalentSearchRoutes);
 app.use('/api/organization', organizationRoutes);
 app.use('/api/meeting', meetingRoutes);
+
+app.use('/auth', oidcRoutes);
+app.get('/api/me', getMe);
 
 // Health check
 app.get('/api/health', (req, res) => {

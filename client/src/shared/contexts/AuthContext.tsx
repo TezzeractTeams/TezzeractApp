@@ -1,43 +1,86 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session, AuthError } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import type { OidcClaims } from '../types/oidc';
+
+/** Minimal user shape for UI components (OIDC-primary). */
+export interface AppUser {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+    avatar_url?: string;
+    phone?: string;
+  };
+}
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: AppUser | null;
+  session: { access_token: string } | null;
   loading: boolean;
+  oidcClaims: OidcClaims | null;
+  oidcAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null }>;
-  signOut: () => Promise<void>;
+  signOut: () => void;
   signInWithGoogle: (redirectTo?: string) => Promise<void>;
+  refreshOidcSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function claimsToUser(claims: OidcClaims | null): AppUser | null {
+  if (!claims?.sub) return null;
+  const name =
+    typeof claims.name === 'string'
+      ? claims.name
+      : typeof claims.preferred_username === 'string'
+        ? claims.preferred_username
+        : undefined;
+  const picture =
+    typeof claims.picture === 'string' ? claims.picture : undefined;
+  return {
+    id: claims.sub,
+    email: typeof claims.email === 'string' ? claims.email : undefined,
+    user_metadata: {
+      full_name: name,
+      avatar_url: picture,
+    },
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [oidcClaims, setOidcClaims] = useState<OidcClaims | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+  const refreshOidcSession = useCallback(async () => {
+    try {
+      const res = await fetch('/api/me', { credentials: 'include' });
+      if (res.ok) {
+        const data = (await res.json()) as { claims: OidcClaims };
+        setOidcClaims(data.claims);
+      } else {
+        setOidcClaims(null);
+      }
+    } catch {
+      setOidcClaims(null);
+    }
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await refreshOidcSession();
+      if (!cancelled) setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshOidcSession]);
+
+  const user = claimsToUser(oidcClaims);
+  const oidcAuthenticated = user !== null;
+  const session = oidcAuthenticated ? { access_token: 'cookie' } : null;
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -72,19 +115,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/';
+  const signOut = () => {
+    window.location.href = '/auth/logout';
   };
 
   const value = {
     user,
     session,
     loading,
+    oidcClaims,
+    oidcAuthenticated,
     signIn,
     signUp,
     signOut,
     signInWithGoogle,
+    refreshOidcSession,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -97,4 +142,3 @@ export function useAuth() {
   }
   return context;
 }
-

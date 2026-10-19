@@ -14,12 +14,8 @@ const navItems = [
 ];
 
 export default function VerticalSidebar() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
-
-  const handleLogout = async () => {
-    await signOut();
-  };
 
   return (
     <aside 
@@ -144,18 +140,19 @@ export default function VerticalSidebar() {
             </div>
           )}
           
-          {/* Logout Button */}
-          <button
-            onClick={handleLogout}
+          {/* Sign out — full navigation to OIDC logout */}
+          <a
+            href="/auth/logout"
             className="w-12 h-12 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-600 hover:text-white transition-all duration-200 group relative"
+            aria-label="Sign out"
           >
             <LogOut className="w-6 h-6" />
             
             {/* Tooltip */}
             <div className="absolute left-16 ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-              Logout
+              Sign out
             </div>
-          </button>
+          </a>
         </div>
       </div>
     </aside>

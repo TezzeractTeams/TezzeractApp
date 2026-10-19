@@ -1,11 +1,12 @@
 import axios, { AxiosInstance } from 'axios';
 import { supabase } from '../lib/supabase';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Create base axios instance
 export const api = axios.create({
   baseURL: API_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -15,6 +16,7 @@ export const api = axios.create({
 export const createAuthenticatedApi = (getToken: () => Promise<string | null>): AxiosInstance => {
   const authenticatedApi = axios.create({
     baseURL: API_URL,
+    withCredentials: true,
     headers: {
       'Content-Type': 'application/json',
     },

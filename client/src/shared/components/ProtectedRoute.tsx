@@ -1,5 +1,4 @@
-import { ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { ReactNode, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -8,7 +7,12 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
-  const location = useLocation();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      window.location.assign('/auth/login');
+    }
+  }, [loading, user]);
 
   if (loading) {
     return (
@@ -19,9 +23,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: { pathname: location.pathname } }} replace />;
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#010101]">
+        <a href="/auth/login" className="text-white underline">
+          Sign in
+        </a>
+      </div>
+    );
   }
 
   return <>{children}</>;
 }
-
