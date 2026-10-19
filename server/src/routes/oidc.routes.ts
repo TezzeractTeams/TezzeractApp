@@ -101,7 +101,8 @@ router.get('/callback', async (req, res) => {
     }
 
     clearTransientCookies(res);
-    return res.redirect('/');
+    const clientOrigin = (process.env.CLIENT_URL || '').replace(/\/$/, '');
+    return res.redirect(clientOrigin ? `${clientOrigin}/` : '/');
   } catch (err) {
     console.error('OIDC callback error:', err);
     clearTransientCookies(res);

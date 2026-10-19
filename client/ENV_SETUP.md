@@ -26,7 +26,20 @@ On the Vercel project, set an environment variable (Production + Preview):
 API_PROXY_ORIGIN=https://YOUR-SERVICE.onrender.com
 ```
 
-Use your Render web service URL with **no** trailing slash. The client `build` script generates `vercel.json` rewrites that proxy `/api/*` and `/auth/*` to that origin.
+Use your Render web service URL with **no** trailing slash. Routing is defined in `client/vercel.ts`, which reads `API_PROXY_ORIGIN` when Vercel builds (not the old `vercel.json` generator — that ran too late to take effect).
+
+**Vercel project → Settings → General → Root Directory** should be either:
+
+- `client` (uses `client/vercel.ts`), or
+- repository root (uses root `vercel.ts` + `pnpm --filter client build`).
+
+Push the latest code and redeploy. After deploy, verify:
+
+```bash
+curl -sI https://app.tezzeract.com/auth/login | head -5
+```
+
+You should see **`HTTP/2 302`** (or **307**) to `auth.tezzeract.com`, **not** `200` with `content-type: text/html`.
 
 Without `API_PROXY_ORIGIN`, `/auth/login` loads `index.html`, React Router sends you back to `/`, and you never reach `auth.tezzeract.com`.
 
