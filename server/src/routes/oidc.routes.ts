@@ -8,6 +8,7 @@ import {
   transientCookieOptions,
   tokenCookieOptions,
 } from '../utils/oidc.js';
+import { verifyLogoutToken } from '../utils/backchannelLogout.js';
 
 const router = Router();
 
@@ -117,12 +118,29 @@ router.get('/logout', (req, res) => {
 
   const params = new URLSearchParams({
     post_logout_redirect_uri: oidcConfig.postLogoutRedirectUri,
+    state: oidcConfig.clientId,
   });
   if (idTokenHint) {
     params.set('id_token_hint', idTokenHint);
   }
 
   res.redirect(`${oidcConfig.endSessionUrl}?${params.toString()}`);
+});
+
+router.post('/backchannel-logout', async (req, res) => {
+  const logoutToken = req.body?.logout_token;
+  if (typeof logoutToken !== 'string' || !logoutToken) {
+    res.status(400).end();
+    return;
+  }
+
+  try {
+    await verifyLogoutToken(logoutToken);
+    clearTokenCookies(res);
+    res.status(200).end();
+  } catch {
+    res.status(400).end();
+  }
 });
 
 export default router;

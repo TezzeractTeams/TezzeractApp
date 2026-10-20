@@ -78,6 +78,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [refreshOidcSession]);
 
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      void refreshOidcSession();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [refreshOidcSession]);
+
   const user = claimsToUser(oidcClaims);
   const oidcAuthenticated = user !== null;
   const session = oidcAuthenticated ? { access_token: 'cookie' } : null;
