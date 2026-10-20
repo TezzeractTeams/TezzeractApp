@@ -10,9 +10,53 @@ import {
 } from '../utils/oidc.js';
 import { verifyLogoutToken } from '../utils/backchannelLogout.js';
 import { revokeSession } from '../utils/revokedSessions.js';
-import { debugAgentLog } from '../utils/debugAgentLog.js';
 
 const router = Router();
+
+function appendQueryParam(path: string, key: string, value: string): string {
+  const qIndex = path.indexOf('?');
+  const pathname = qIndex === -1 ? path : path.slice(0, qIndex);
+  const search = qIndex === -1 ? '' : path.slice(qIndex + 1);
+  const params = new URLSearchParams(search);
+  params.set(key, value);
+  const qs = params.toString();
+  return qs ? `${pathname}?${qs}` : pathname;
+}
+
+function redirectToClient(res: import('express').Response, next: string, origin: string) {
+  const target = origin ? `${origin}${next}` : next;
+  return res.redirect(target);
+}
+
+/** Silent probe finished without tokens (logged out). */
+function silentProbeDoneRedirect(
+  res: import('express').Response,
+  next: string,
+  origin: string,
+) {
+  return redirectToClient(res, appendQueryParam(next, 'silent_sso', 'done'), origin);
+}
+
+/**
+ * SSO session exists at auth.tezzeract.com but this client has no grant yet.
+ * `prompt=none` cannot show consent; chain to interactive login, which
+ * auto-continues when the user is already signed in (e.g. via Drive).
+ */
+function chainInteractiveLogin(res: import('express').Response, next: string) {
+  return res.redirect(`/auth/login?next=${encodeURIComponent(next)}`);
+}
+
+function handleSilentAuthorizeError(
+  res: import('express').Response,
+  error: string,
+  next: string,
+  origin: string,
+) {
+  if (error === 'consent_required' || error === 'interaction_required') {
+    return chainInteractiveLogin(res, next);
+  }
+  return silentProbeDoneRedirect(res, next, origin);
+}
 
 /**
  * Only ever a same-origin, root-relative path. Guards against the "next"
@@ -65,13 +109,6 @@ router.get('/login', (req, res) => {
     res.cookie('auth_silent', '1', transientCookieOptions());
   }
 
-  debugAgentLog(
-    'oidc.routes.ts:/login',
-    'starting authorize redirect',
-    { silent, next },
-    silent ? 'B' : 'E',
-  );
-
   const params = new URLSearchParams({
     client_id: oidcConfig.clientId,
     redirect_uri: oidcConfig.redirectUri,
@@ -103,15 +140,9 @@ router.get('/callback', async (req, res) => {
    * surface an error for the interactive (non-silent) flow.
    */
   if (typeof error === 'string') {
-    debugAgentLog(
-      'oidc.routes.ts:/callback',
-      'authorize error',
-      { error, wasSilent, next },
-      'B',
-    );
     clearTransientCookies(res);
     if (wasSilent) {
-      return res.redirect(origin ? `${origin}${next}` : next);
+      return handleSilentAuthorizeError(res, error, next, origin);
     }
     return res.redirect(origin ? `${origin}${next}?authError=1` : `${next}?authError=1`);
   }
@@ -125,7 +156,7 @@ router.get('/callback', async (req, res) => {
   ) {
     clearTransientCookies(res);
     if (wasSilent) {
-      return res.redirect(origin ? `${origin}${next}` : next);
+      return silentProbeDoneRedirect(res, next, origin);
     }
     return res.status(400).json({ error: 'invalid_state_or_code' });
   }
@@ -146,7 +177,7 @@ router.get('/callback', async (req, res) => {
     if (!tokenResponse.ok) {
       clearTransientCookies(res);
       if (wasSilent) {
-        return res.redirect(origin ? `${origin}${next}` : next);
+        return silentProbeDoneRedirect(res, next, origin);
       }
       return res.status(400).json({ error: 'token_exchange_failed' });
     }
@@ -160,7 +191,7 @@ router.get('/callback', async (req, res) => {
     if (!tokens.access_token) {
       clearTransientCookies(res);
       if (wasSilent) {
-        return res.redirect(origin ? `${origin}${next}` : next);
+        return silentProbeDoneRedirect(res, next, origin);
       }
       return res.status(400).json({ error: 'missing_access_token' });
     }
@@ -177,19 +208,13 @@ router.get('/callback', async (req, res) => {
     }
 
     clearTransientCookies(res);
-    debugAgentLog(
-      'oidc.routes.ts:/callback',
-      'tokens set, redirecting',
-      { wasSilent, next, hasRefresh: Boolean(tokens.refresh_token) },
-      'C',
-    );
     return res.redirect(origin ? `${origin}${next}` : next);
   } catch (err) {
     console.error('OIDC callback error:', err);
     clearTransientCookies(res);
     clearTokenCookies(res);
     if (wasSilent) {
-      return res.redirect(origin ? `${origin}${next}` : next);
+      return silentProbeDoneRedirect(res, next, origin);
     }
     return res.status(400).json({ error: 'authentication_failed' });
   }

@@ -50,11 +50,26 @@ function claimsToUser(claims: OidcClaims | null): AppUser | null {
 }
 
 /**
- * Set once this tab has already tried the silent SSO probe, so a genuinely
- * logged-out visitor only bounces through `/auth/login?silent=1` once per
- * tab rather than on every mount/remount.
+ * Set when the silent SSO round-trip completes without signing in, so a
+ * logged-out visitor is not sent through `/auth/login?silent=1` on every
+ * navigation. Not set before the redirect — only after the server marks
+ * the probe done via `?silent_sso=done`.
  */
-const SILENT_SSO_ATTEMPTED_KEY = 'tz_silent_sso_attempted';
+const SILENT_SSO_COMPLETED_KEY = 'tz_silent_sso_completed';
+
+function consumeSilentSsoDoneMarker(): void {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('silent_sso') !== 'done') return;
+    params.delete('silent_sso');
+    const qs = params.toString();
+    const clean = `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`;
+    window.history.replaceState(null, '', clean);
+    sessionStorage.setItem(SILENT_SSO_COMPLETED_KEY, '1');
+  } catch {
+    // sessionStorage unavailable — probe may repeat once per load.
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [oidcClaims, setOidcClaims] = useState<OidcClaims | null>(null);
@@ -63,21 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshOidcSession = useCallback(async () => {
     try {
       const res = await fetch('/api/me', { credentials: 'include' });
-      // #region agent log
-      fetch('http://127.0.0.1:7850/ingest/ff32a892-6f20-4005-9c7a-0f72065e67d5', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '42535a' },
-        body: JSON.stringify({
-          sessionId: '42535a',
-          runId: 'pre-fix',
-          hypothesisId: 'C',
-          location: 'AuthContext.tsx:refreshOidcSession',
-          message: '/api/me response',
-          data: { status: res.status, ok: res.ok },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       if (res.ok) {
         const data = (await res.json()) as { claims: OidcClaims };
         setOidcClaims(data.claims);
@@ -94,6 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      consumeSilentSsoDoneMarker();
+
       const authenticated = await refreshOidcSession();
       if (cancelled) return;
 
@@ -102,37 +104,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Tezzeract product already signed this browser in, this bounces
         // through auth.tezzeract.com with prompt=none and comes straight
         // back signed in, with no visible redirect for the common case.
-        // A genuinely logged-out visitor also round-trips once (quickly,
-        // via login_required) and is then left alone on this page.
-        let alreadyAttempted = true;
+        // If the user has an SSO session but no grant for `app` yet,
+        // the server chains to interactive login (auto-continue at auth).
+        let silentProbeCompleted = true;
         try {
-          alreadyAttempted = sessionStorage.getItem(SILENT_SSO_ATTEMPTED_KEY) === '1';
+          silentProbeCompleted =
+            sessionStorage.getItem(SILENT_SSO_COMPLETED_KEY) === '1';
         } catch {
-          // sessionStorage unavailable (e.g. privacy mode) — skip the probe.
+          // sessionStorage unavailable — skip the probe.
         }
 
-        // #region agent log
-        fetch('http://127.0.0.1:7850/ingest/ff32a892-6f20-4005-9c7a-0f72065e67d5', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '42535a' },
-          body: JSON.stringify({
-            sessionId: '42535a',
-            runId: 'pre-fix',
-            hypothesisId: 'A',
-            location: 'AuthContext.tsx:useEffect',
-            message: 'silent SSO branch',
-            data: { authenticated, alreadyAttempted },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
-
-        if (!alreadyAttempted) {
-          try {
-            sessionStorage.setItem(SILENT_SSO_ATTEMPTED_KEY, '1');
-          } catch {
-            // Ignore — worst case the probe runs again next load.
-          }
+        if (!silentProbeCompleted) {
           const next = `${window.location.pathname}${window.location.search}`;
           window.location.assign(
             `/auth/login?silent=1&next=${encodeURIComponent(next)}`
@@ -196,7 +178,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = () => {
     try {
-      sessionStorage.removeItem(SILENT_SSO_ATTEMPTED_KEY);
+      sessionStorage.removeItem(SILENT_SSO_COMPLETED_KEY);
+      sessionStorage.removeItem('tz_silent_sso_attempted');
     } catch {
       // Ignore — logout must still proceed.
     }
