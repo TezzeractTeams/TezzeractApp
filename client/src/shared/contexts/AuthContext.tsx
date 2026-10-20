@@ -24,7 +24,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null }>;
   signOut: () => void;
   signInWithGoogle: (redirectTo?: string) => Promise<void>;
-  refreshOidcSession: () => Promise<void>;
+  refreshOidcSession: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,6 +49,13 @@ function claimsToUser(claims: OidcClaims | null): AppUser | null {
   };
 }
 
+/**
+ * Set once this tab has already tried the silent SSO probe, so a genuinely
+ * logged-out visitor only bounces through `/auth/login?silent=1` once per
+ * tab rather than on every mount/remount.
+ */
+const SILENT_SSO_ATTEMPTED_KEY = 'tz_silent_sso_attempted';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [oidcClaims, setOidcClaims] = useState<OidcClaims | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,19 +66,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         const data = (await res.json()) as { claims: OidcClaims };
         setOidcClaims(data.claims);
-      } else {
-        setOidcClaims(null);
+        return true;
       }
+      setOidcClaims(null);
+      return false;
     } catch {
       setOidcClaims(null);
+      return false;
     }
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      await refreshOidcSession();
-      if (!cancelled) setLoading(false);
+      const authenticated = await refreshOidcSession();
+      if (cancelled) return;
+
+      if (!authenticated) {
+        // Try a silent cross-app SSO probe once per tab: if another
+        // Tezzeract product already signed this browser in, this bounces
+        // through auth.tezzeract.com with prompt=none and comes straight
+        // back signed in, with no visible redirect for the common case.
+        // A genuinely logged-out visitor also round-trips once (quickly,
+        // via login_required) and is then left alone on this page.
+        let alreadyAttempted = true;
+        try {
+          alreadyAttempted = sessionStorage.getItem(SILENT_SSO_ATTEMPTED_KEY) === '1';
+        } catch {
+          // sessionStorage unavailable (e.g. privacy mode) — skip the probe.
+        }
+
+        if (!alreadyAttempted) {
+          try {
+            sessionStorage.setItem(SILENT_SSO_ATTEMPTED_KEY, '1');
+          } catch {
+            // Ignore — worst case the probe runs again next load.
+          }
+          const next = `${window.location.pathname}${window.location.search}`;
+          window.location.assign(
+            `/auth/login?silent=1&next=${encodeURIComponent(next)}`
+          );
+          return;
+        }
+      }
+
+      setLoading(false);
     })();
     return () => {
       cancelled = true;

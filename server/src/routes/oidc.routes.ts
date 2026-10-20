@@ -9,12 +9,30 @@ import {
   tokenCookieOptions,
 } from '../utils/oidc.js';
 import { verifyLogoutToken } from '../utils/backchannelLogout.js';
+import { revokeSession } from '../utils/revokedSessions.js';
 
 const router = Router();
+
+/**
+ * Only ever a same-origin, root-relative path. Guards against the "next"
+ * cookie being used to build an open redirect.
+ */
+function sanitizeNextPath(next: unknown): string {
+  if (typeof next !== 'string' || !next.startsWith('/') || next.startsWith('//')) {
+    return '/';
+  }
+  return next;
+}
+
+function clientOrigin(): string {
+  return (process.env.CLIENT_URL || '').replace(/\/$/, '');
+}
 
 function clearTransientCookies(res: import('express').Response) {
   res.clearCookie('pkce_verifier', { path: '/' });
   res.clearCookie('oauth_state', { path: '/' });
+  res.clearCookie('auth_next', { path: '/' });
+  res.clearCookie('auth_silent', { path: '/' });
 }
 
 function clearTokenCookies(res: import('express').Response) {
@@ -23,20 +41,35 @@ function clearTokenCookies(res: import('express').Response) {
   res.clearCookie('id_token', { path: '/' });
 }
 
-router.get('/login', (_req, res) => {
+/**
+ * GET /auth/login
+ *
+ * `?silent=1` is the silent-SSO probe used by the client on first load: it
+ * asks the auth server with `prompt=none`, which resolves immediately
+ * (success or `login_required`/`consent_required`/`interaction_required`
+ * error) without ever rendering an interactive screen. `?next=` is preserved
+ * across the round trip so the user lands back where they started.
+ */
+router.get('/login', (req, res) => {
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
   const state = generateState();
+  const silent = req.query.silent === '1';
+  const next = sanitizeNextPath(req.query.next);
 
   res.cookie('pkce_verifier', codeVerifier, transientCookieOptions());
   res.cookie('oauth_state', state, transientCookieOptions());
+  res.cookie('auth_next', next, transientCookieOptions());
+  if (silent) {
+    res.cookie('auth_silent', '1', transientCookieOptions());
+  }
 
   const params = new URLSearchParams({
     client_id: oidcConfig.clientId,
     redirect_uri: oidcConfig.redirectUri,
     response_type: 'code',
     scope: 'openid email profile offline_access',
-    prompt: 'consent',
+    prompt: silent ? 'none' : 'consent',
     state,
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
@@ -46,9 +79,28 @@ router.get('/login', (_req, res) => {
 });
 
 router.get('/callback', async (req, res) => {
-  const { code, state } = req.query;
+  const { code, state, error } = req.query;
   const cookieState = req.cookies?.oauth_state;
   const codeVerifier = req.cookies?.pkce_verifier;
+  const next = sanitizeNextPath(req.cookies?.auth_next);
+  const wasSilent = req.cookies?.auth_silent === '1';
+  const origin = clientOrigin();
+
+  /**
+   * `prompt=none` resolves immediately with `error=login_required` /
+   * `consent_required` / `interaction_required` when there is no existing
+   * SSO session (or no grant yet for this client) — that is the normal,
+   * expected outcome for a logged-out visitor, not a failure. Swallow it
+   * silently and land back on the page the probe was started from; only
+   * surface an error for the interactive (non-silent) flow.
+   */
+  if (typeof error === 'string') {
+    clearTransientCookies(res);
+    if (wasSilent) {
+      return res.redirect(origin ? `${origin}${next}` : next);
+    }
+    return res.redirect(origin ? `${origin}${next}?authError=1` : `${next}?authError=1`);
+  }
 
   if (
     typeof code !== 'string' ||
@@ -58,6 +110,9 @@ router.get('/callback', async (req, res) => {
     state !== cookieState
   ) {
     clearTransientCookies(res);
+    if (wasSilent) {
+      return res.redirect(origin ? `${origin}${next}` : next);
+    }
     return res.status(400).json({ error: 'invalid_state_or_code' });
   }
 
@@ -76,6 +131,9 @@ router.get('/callback', async (req, res) => {
 
     if (!tokenResponse.ok) {
       clearTransientCookies(res);
+      if (wasSilent) {
+        return res.redirect(origin ? `${origin}${next}` : next);
+      }
       return res.status(400).json({ error: 'token_exchange_failed' });
     }
 
@@ -87,6 +145,9 @@ router.get('/callback', async (req, res) => {
 
     if (!tokens.access_token) {
       clearTransientCookies(res);
+      if (wasSilent) {
+        return res.redirect(origin ? `${origin}${next}` : next);
+      }
       return res.status(400).json({ error: 'missing_access_token' });
     }
 
@@ -102,12 +163,14 @@ router.get('/callback', async (req, res) => {
     }
 
     clearTransientCookies(res);
-    const clientOrigin = (process.env.CLIENT_URL || '').replace(/\/$/, '');
-    return res.redirect(clientOrigin ? `${clientOrigin}/` : '/');
+    return res.redirect(origin ? `${origin}${next}` : next);
   } catch (err) {
     console.error('OIDC callback error:', err);
     clearTransientCookies(res);
     clearTokenCookies(res);
+    if (wasSilent) {
+      return res.redirect(origin ? `${origin}${next}` : next);
+    }
     return res.status(400).json({ error: 'authentication_failed' });
   }
 });
@@ -135,8 +198,18 @@ router.post('/backchannel-logout', async (req, res) => {
   }
 
   try {
-    await verifyLogoutToken(logoutToken);
+    const payload = await verifyLogoutToken(logoutToken);
+    /**
+     * This clears cookies on the response to auth.tezzeract.com's own
+     * request, which has no effect on any browser tab — kept only so a
+     * same-origin caller gets a clean cookie jar too. The actual sign-out
+     * for an already-open tab happens via `revokeSession` below, which
+     * `getMe` checks on every request.
+     */
     clearTokenCookies(res);
+    if (typeof payload.sid === 'string') {
+      revokeSession(payload.sid);
+    }
     res.status(200).end();
   } catch {
     res.status(400).end();
