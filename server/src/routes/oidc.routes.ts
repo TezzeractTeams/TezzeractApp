@@ -10,6 +10,7 @@ import {
 } from '../utils/oidc.js';
 import { verifyLogoutToken } from '../utils/backchannelLogout.js';
 import { revokeSession } from '../utils/revokedSessions.js';
+import { debugAgentLog } from '../utils/debugAgentLog.js';
 
 const router = Router();
 
@@ -64,6 +65,13 @@ router.get('/login', (req, res) => {
     res.cookie('auth_silent', '1', transientCookieOptions());
   }
 
+  debugAgentLog(
+    'oidc.routes.ts:/login',
+    'starting authorize redirect',
+    { silent, next },
+    silent ? 'B' : 'E',
+  );
+
   const params = new URLSearchParams({
     client_id: oidcConfig.clientId,
     redirect_uri: oidcConfig.redirectUri,
@@ -95,6 +103,12 @@ router.get('/callback', async (req, res) => {
    * surface an error for the interactive (non-silent) flow.
    */
   if (typeof error === 'string') {
+    debugAgentLog(
+      'oidc.routes.ts:/callback',
+      'authorize error',
+      { error, wasSilent, next },
+      'B',
+    );
     clearTransientCookies(res);
     if (wasSilent) {
       return res.redirect(origin ? `${origin}${next}` : next);
@@ -163,6 +177,12 @@ router.get('/callback', async (req, res) => {
     }
 
     clearTransientCookies(res);
+    debugAgentLog(
+      'oidc.routes.ts:/callback',
+      'tokens set, redirecting',
+      { wasSilent, next, hasRefresh: Boolean(tokens.refresh_token) },
+      'C',
+    );
     return res.redirect(origin ? `${origin}${next}` : next);
   } catch (err) {
     console.error('OIDC callback error:', err);

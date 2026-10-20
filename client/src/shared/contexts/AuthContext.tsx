@@ -63,6 +63,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshOidcSession = useCallback(async () => {
     try {
       const res = await fetch('/api/me', { credentials: 'include' });
+      // #region agent log
+      fetch('http://127.0.0.1:7850/ingest/ff32a892-6f20-4005-9c7a-0f72065e67d5', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '42535a' },
+        body: JSON.stringify({
+          sessionId: '42535a',
+          runId: 'pre-fix',
+          hypothesisId: 'C',
+          location: 'AuthContext.tsx:refreshOidcSession',
+          message: '/api/me response',
+          data: { status: res.status, ok: res.ok },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       if (res.ok) {
         const data = (await res.json()) as { claims: OidcClaims };
         setOidcClaims(data.claims);
@@ -95,6 +110,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch {
           // sessionStorage unavailable (e.g. privacy mode) — skip the probe.
         }
+
+        // #region agent log
+        fetch('http://127.0.0.1:7850/ingest/ff32a892-6f20-4005-9c7a-0f72065e67d5', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '42535a' },
+          body: JSON.stringify({
+            sessionId: '42535a',
+            runId: 'pre-fix',
+            hypothesisId: 'A',
+            location: 'AuthContext.tsx:useEffect',
+            message: 'silent SSO branch',
+            data: { authenticated, alreadyAttempted },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
 
         if (!alreadyAttempted) {
           try {
