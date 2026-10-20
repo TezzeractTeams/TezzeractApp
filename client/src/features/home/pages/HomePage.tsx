@@ -3,14 +3,30 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/ui/Input";
 import { ArrowRight, Plus, Settings2, Loader2 } from "lucide-react";
-import { useOidcSession } from "@/shared/hooks/useOidcSession";
+import { useOidcSession, type OidcClaims } from "@/shared/hooks/useOidcSession";
 
+function displayNameFromClaims(claims: OidcClaims | null): string {
+  if (typeof claims?.name === "string" && claims.name.trim()) {
+    return claims.name.trim();
+  }
+  if (
+    typeof claims?.preferred_username === "string" &&
+    claims.preferred_username.trim()
+  ) {
+    return claims.preferred_username.trim();
+  }
+  if (typeof claims?.email === "string" && claims.email.trim()) {
+    return claims.email.trim();
+  }
+  return "Account";
+}
 
 export default function HomePage() {
-  const { authenticated, loading: oidcLoading } = useOidcSession();
+  const { authenticated, loading: oidcLoading, claims } = useOidcSession();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const displayName = displayNameFromClaims(claims);
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -39,18 +55,23 @@ export default function HomePage() {
   return (
     <div className="flex flex-col bg-[#010101] bg-[url('/Tezzeract_3d_bg.webp')] bg-no-repeat bg-[center_10rem] h-[100vh] justify-center relative">
       {!oidcLoading && (
-        <div className="absolute top-6 right-8">
+        <div className="absolute top-6 right-8 z-10 flex items-center gap-3">
           {authenticated ? (
-            <a
-              href="/auth/logout"
-              className="text-white/90 text-sm font-medium hover:text-white underline"
-            >
-              Sign out
-            </a>
+            <>
+              <span className="text-white text-sm font-medium max-w-[16rem] truncate">
+                {displayName}
+              </span>
+              <a
+                href="/auth/logout"
+                className="inline-flex items-center justify-center h-10 px-5 rounded-xl border border-white/40 text-white text-sm font-medium hover:bg-white/10 transition-colors"
+              >
+                Sign out
+              </a>
+            </>
           ) : (
             <a
               href="/auth/login"
-              className="text-white/90 text-sm font-medium hover:text-white underline"
+              className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-white/40 text-white text-sm font-medium bg-[radial-gradient(64.46%_80%_at_50.53%_0%,#009BE9_0%,#00378A_100%)] hover:shadow-[0_0_10px_0_rgba(0,169,238,0.40)] transition-shadow"
             >
               Sign in
             </a>
