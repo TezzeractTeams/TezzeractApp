@@ -164,6 +164,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = () => {
+    try {
+      sessionStorage.removeItem(SILENT_SSO_ATTEMPTED_KEY);
+    } catch {
+      // Ignore — logout must still proceed.
+    }
     window.location.href = '/auth/logout';
   };
 

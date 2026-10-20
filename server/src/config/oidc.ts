@@ -8,13 +8,25 @@ function requireEnv(name: string): string {
   return value;
 }
 
+function resolvePostLogoutRedirectUri(issuer: string): string {
+  const landing =
+    process.env.AUTH_POST_LOGOUT_LANDING_URI ??
+    process.env.AUTH_POST_LOGOUT_REDIRECT_URI;
+  if (landing) return landing;
+  // Same default as Drive: land on auth /signed-out so RP-initiated logout
+  // finishes on Identity and does not bounce straight into app silent SSO.
+  return `${issuer.replace(/\/$/, '')}/signed-out`;
+}
+
+const issuer = requireEnv('AUTH_ISSUER');
+
 export const oidcConfig = {
-  issuer: requireEnv('AUTH_ISSUER'),
+  issuer,
   clientId: requireEnv('AUTH_CLIENT_ID'),
   // redirectUri must match the value registered with the auth server EXACTLY
   // (no trailing slash tolerance, no wildcards). Never derive/rebuild this.
   redirectUri: requireEnv('AUTH_REDIRECT_URI'),
-  postLogoutRedirectUri: requireEnv('AUTH_POST_LOGOUT_REDIRECT_URI'),
+  postLogoutRedirectUri: resolvePostLogoutRedirectUri(issuer),
   get authorizeUrl() {
     return `${this.issuer}/authorize`;
   },
