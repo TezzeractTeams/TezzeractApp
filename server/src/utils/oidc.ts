@@ -31,6 +31,35 @@ export async function verifyAccessToken(token: string): Promise<JWTPayload> {
   return payload;
 }
 
+export interface TokenSet {
+  access_token: string;
+  refresh_token?: string;
+  id_token?: string;
+}
+
+/** Exchange a refresh token at the auth server's token endpoint. */
+export async function refreshAccessToken(refreshToken: string): Promise<TokenSet> {
+  const response = await fetch(oidcConfig.tokenUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: oidcConfig.clientId,
+    }).toString(),
+  });
+
+  if (!response.ok) {
+    throw new Error('refresh_failed');
+  }
+
+  const tokens = (await response.json()) as TokenSet;
+  if (!tokens.access_token) {
+    throw new Error('missing_access_token');
+  }
+  return tokens;
+}
+
 export const TRANSIENT_COOKIE_MAX_AGE_MS = 10 * 60 * 1000;
 
 export function transientCookieOptions() {
