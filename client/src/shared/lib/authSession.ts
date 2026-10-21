@@ -14,14 +14,25 @@ export const AUTH_CHANNEL_NAME = 'tz-auth';
 export const SESSION_POLL_INTERVAL_MS = 60_000;
 
 let redirecting = false;
+/** Set once this tab starts signing out; its own navigation must not be replaced. */
+let signingOut = false;
+
+/** Identifies this tab so it can ignore its own broadcast. */
+const TAB_ID =
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random()}`;
+
+type LogoutMessage = { type: 'logout'; from: string };
 
 /** Test seam: allow `handleUnauthorized` to fire again. */
 export function resetUnauthorizedGuard(): void {
   redirecting = false;
+  signingOut = false;
 }
 
 export function handleUnauthorized(): void {
-  if (redirecting) return;
+  if (redirecting || signingOut) return;
 
   const { pathname, search } = window.location;
   // Already on an auth route: another redirect would only loop.
@@ -37,9 +48,13 @@ function openChannel(): BroadcastChannel | null {
 }
 
 export function broadcastLogout(): void {
+  // Mark first: BroadcastChannel also delivers to other channel objects in
+  // this same tab (e.g. a mounted session watcher), and a login redirect
+  // there would replace the pending /auth/logout navigation.
+  signingOut = true;
   const channel = openChannel();
   if (!channel) return;
-  channel.postMessage('logout');
+  channel.postMessage({ type: 'logout', from: TAB_ID } satisfies LogoutMessage);
   channel.close();
 }
 
@@ -49,7 +64,8 @@ export function listenForLogout(onLogout: () => void): () => void {
   if (!channel) return () => undefined;
 
   channel.onmessage = (event: MessageEvent) => {
-    if (event.data === 'logout') onLogout();
+    const data = event.data as Partial<LogoutMessage> | undefined;
+    if (data?.type === 'logout' && data.from !== TAB_ID) onLogout();
   };
   return () => channel.close();
 }

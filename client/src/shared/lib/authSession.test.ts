@@ -81,11 +81,28 @@ describe('logout broadcast', () => {
     const onLogout = vi.fn();
     const stop = listenForLogout(onLogout);
 
-    broadcastLogout();
-    expect(FakeChannel.instances.every((c) => c.name === AUTH_CHANNEL_NAME)).toBe(true);
+    // A different tab: same channel name, different tab id.
+    new FakeChannel(AUTH_CHANNEL_NAME).postMessage({ type: 'logout', from: 'other-tab' });
     expect(onLogout).toHaveBeenCalledTimes(1);
 
     stop();
+  });
+
+  it('does not react to its own broadcast in the sending tab', () => {
+    const onLogout = vi.fn();
+    const stop = listenForLogout(onLogout);
+
+    broadcastLogout();
+    expect(FakeChannel.instances.every((c) => c.name === AUTH_CHANNEL_NAME)).toBe(true);
+    expect(onLogout).not.toHaveBeenCalled();
+
+    stop();
+  });
+
+  it('does not replace the logout navigation with a login redirect', () => {
+    broadcastLogout();
+    handleUnauthorized();
+    expect(assign).not.toHaveBeenCalled();
   });
 
   it('is a no-op when BroadcastChannel is unavailable', () => {

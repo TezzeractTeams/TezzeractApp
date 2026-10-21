@@ -1,3 +1,6 @@
+// Load .env before the module-level requireEnv() calls below. ES imports are
+// hoisted, so dotenv.config() in server.ts can run after this module loads.
+import 'dotenv/config';
 import { createRemoteJWKSet } from 'jose';
 
 function requireEnv(name: string): string {
