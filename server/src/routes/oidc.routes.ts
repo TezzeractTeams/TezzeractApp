@@ -242,8 +242,15 @@ router.post('/backchannel-logout', async (req, res) => {
     return;
   }
 
+  let payload;
   try {
-    const payload = await verifyLogoutToken(logoutToken);
+    payload = await verifyLogoutToken(logoutToken);
+  } catch {
+    res.status(400).end();
+    return;
+  }
+
+  try {
     /**
      * This clears cookies on the response to auth.tezzeract.com's own
      * request, which has no effect on any browser tab — kept only so a
@@ -253,11 +260,13 @@ router.post('/backchannel-logout', async (req, res) => {
      */
     clearTokenCookies(res);
     if (typeof payload.sid === 'string') {
-      revokeSession(payload.sid);
+      await revokeSession(payload.sid);
     }
     res.status(200).end();
   } catch {
-    res.status(400).end();
+    // The token was valid but the revocation could not be stored. A 5xx
+    // lets auth.tezzeract.com retry rather than assume the logout landed.
+    res.status(500).end();
   }
 });
 

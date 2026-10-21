@@ -19,7 +19,7 @@ export async function getMe(req: Request, res: Response) {
     // another Tezzeract product cannot clear this cookie (that POST never
     // reaches this browser), so a still-unexpired access token can outlive
     // the session it was issued for. Reject it if its `sid` was revoked.
-    if (typeof claims.sid === 'string' && isSessionRevoked(claims.sid)) {
+    if (typeof claims.sid === 'string' && (await isSessionRevoked(claims.sid))) {
       return res.status(401).json({ error: 'unauthenticated' });
     }
     return res.status(200).json({ claims });

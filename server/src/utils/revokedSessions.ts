@@ -1,52 +1,53 @@
-import { CLAIMS_CACHE_MS } from './oidc.js';
+import { isRedisConfigured, redisCommand } from './redisRest.js';
 
 /**
  * Backchannel logout (`POST /auth/backchannel-logout`) is a server-to-server
- * call made directly by auth.tezzeract.com — its response never reaches the
- * user's browser, so clearing cookies there cannot sign out an already-open
- * tab. The access token in that tab's cookie jar is still cryptographically
- * valid for up to `CLAIMS_CACHE_MS` after logout.
+ * call made directly by auth.tezzeract.com, so its response never reaches the
+ * user's browser and cannot clear any cookie. The access token in an open
+ * tab stays cryptographically valid until it expires.
  *
- * This in-memory store closes that window: the backchannel handler records
- * the session's `sid`, and `getMe` rejects any access token carrying a
- * revoked `sid`, even though its signature and `exp` still check out. A TTL
- * equal to the access-token lifetime is enough — nothing here needs to
- * outlive the token it is protecting against, and refresh tokens are
- * already revoked server-side at auth.tezzeract.com, so a later refresh
- * cannot resurrect the session either.
+ * The backchannel handler records the session's `sid` here and every session
+ * check rejects tokens carrying a revoked `sid`. The store is Upstash Redis
+ * over HTTP so every API instance sees the same revocations. The TTL is the
+ * refresh token lifetime: a revoked session must stay revoked for as long as
+ * a refresh token for it could still exist.
  *
- * In-memory and per-process is a deliberate, scoped choice: it only has to
- * survive one access-token lifetime (minutes), not the life of the
- * deployment. A multi-instance deployment would need this centralized (e.g.
- * Redis) to catch every instance consistently; tracked as a follow-up.
+ * Failure policy: recording a revocation throws, so the backchannel endpoint
+ * answers 500 and the auth server can retry. Reading fails open (the token
+ * is still verified by signature and expiry) and logs a warning without the
+ * `sid`.
  */
 
-const revokedSessionExpiry = new Map<string, number>();
+/** Refresh token lifetime at auth.tezzeract.com (14 days). */
+export const REVOCATION_TTL_SECONDS = 14 * 24 * 60 * 60;
 
-function sweepExpired(now: number): void {
-  for (const [sid, expiresAt] of revokedSessionExpiry) {
-    if (expiresAt <= now) {
-      revokedSessionExpiry.delete(sid);
-    }
-  }
+const keyFor = (sid: string) => `revoked:${sid}`;
+
+let warnedUnconfigured = false;
+
+export async function revokeSession(
+  sid: string,
+  ttlSeconds: number = REVOCATION_TTL_SECONDS,
+): Promise<void> {
+  await redisCommand(['SET', keyFor(sid), '1', 'EX', ttlSeconds]);
 }
 
-/** Mark a session id as revoked for the remainder of an access token's life. */
-export function revokeSession(sid: string, ttlMs: number = CLAIMS_CACHE_MS): void {
-  const now = Date.now();
-  sweepExpired(now);
-  revokedSessionExpiry.set(sid, now + ttlMs);
-}
-
-/** True if this session id was revoked and the revocation has not expired. */
-export function isSessionRevoked(sid: string | undefined): boolean {
+export async function isSessionRevoked(sid: string | undefined): Promise<boolean> {
   if (!sid) return false;
-  const now = Date.now();
-  const expiresAt = revokedSessionExpiry.get(sid);
-  if (expiresAt === undefined) return false;
-  if (expiresAt <= now) {
-    revokedSessionExpiry.delete(sid);
+
+  if (!isRedisConfigured()) {
+    if (!warnedUnconfigured) {
+      warnedUnconfigured = true;
+      console.warn('Session revocation store is not configured; revoked sessions are not enforced.');
+    }
     return false;
   }
-  return true;
+
+  try {
+    const result = await redisCommand(['EXISTS', keyFor(sid)]);
+    return result === 1;
+  } catch {
+    console.warn('Session revocation lookup failed; treating the session as not revoked.');
+    return false;
+  }
 }
