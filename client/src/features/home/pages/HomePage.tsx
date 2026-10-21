@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/ui/Input";
 import { ArrowRight, Plus, Settings2, Loader2 } from "lucide-react";
+import { useAuth } from "@/shared/contexts/AuthContext";
 import { useOidcSession, type OidcClaims } from "@/shared/hooks/useOidcSession";
 
 function displayNameFromClaims(claims: OidcClaims | null): string {
@@ -23,6 +24,7 @@ function displayNameFromClaims(claims: OidcClaims | null): string {
 
 export default function HomePage() {
   const { authenticated, loading: oidcLoading, claims } = useOidcSession();
+  const { signOut } = useAuth();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -61,12 +63,13 @@ export default function HomePage() {
               <span className="text-white text-sm font-medium max-w-[16rem] truncate">
                 {displayName}
               </span>
-              <a
-                href="/auth/logout"
+              <button
+                type="button"
+                onClick={signOut}
                 className="inline-flex items-center justify-center h-10 px-5 rounded-xl border border-white/40 text-white text-sm font-medium hover:bg-white/10 transition-colors"
               >
                 Sign out
-              </a>
+              </button>
             </>
           ) : (
             <a

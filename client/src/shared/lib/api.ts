@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { supabase } from './supabase';
+import { handleUnauthorized } from './authSession';
 
 // Default to same-origin `/api` so HttpOnly OIDC cookies work via the Vite proxy in dev.
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -39,9 +40,8 @@ export const createAuthenticatedAxios = (
     (response) => response,
     (error) => {
       if (error.response?.status === 401) {
-        // Token expired or invalid - redirect to login
-        console.error('Authentication error:', error.response.data);
-        window.location.href = '/';
+        // Same handler for every API caller: redirect to /auth/login.
+        handleUnauthorized();
       }
       return Promise.reject(error);
     }

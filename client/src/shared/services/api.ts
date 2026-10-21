@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { supabase } from '../lib/supabase';
+import { handleUnauthorized } from '../lib/authSession';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -45,9 +46,8 @@ export const createAuthenticatedApi = (getToken: () => Promise<string | null>): 
     (response) => response,
     (error) => {
       if (error.response?.status === 401) {
-        console.error('Unauthorized - redirecting to sign in');
-        // Redirect to sign-in
-        window.location.href = '/';
+        // Same handler for every API caller: redirect to /auth/login.
+        handleUnauthorized();
       }
       return Promise.reject(error);
     }

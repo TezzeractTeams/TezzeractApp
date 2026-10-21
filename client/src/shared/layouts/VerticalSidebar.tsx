@@ -14,7 +14,7 @@ const navItems = [
 ];
 
 export default function VerticalSidebar() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const location = useLocation();
 
   return (
@@ -141,8 +141,9 @@ export default function VerticalSidebar() {
           )}
           
           {/* Sign out — full navigation to OIDC logout */}
-          <a
-            href="/auth/logout"
+          <button
+            type="button"
+            onClick={signOut}
             className="w-12 h-12 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-600 hover:text-white transition-all duration-200 group relative"
             aria-label="Sign out"
           >
@@ -152,7 +153,7 @@ export default function VerticalSidebar() {
             <div className="absolute left-16 ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
               Sign out
             </div>
-          </a>
+          </button>
         </div>
       </div>
     </aside>

@@ -1,7 +1,13 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from 'react';
 import { AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import type { OidcClaims } from '../types/oidc';
+import {
+  broadcastLogout,
+  handleUnauthorized,
+  listenForLogout,
+  startSessionPolling,
+} from '../lib/authSession';
 
 /** Minimal user shape for UI components (OIDC-primary). */
 export interface AppUser {
@@ -74,6 +80,9 @@ function consumeSilentSsoDoneMarker(): void {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [oidcClaims, setOidcClaims] = useState<OidcClaims | null>(null);
   const [loading, setLoading] = useState(true);
+  // True once this tab has seen a signed-in session, so a later 401 means the
+  // session was lost (logout elsewhere) rather than a normal anonymous visit.
+  const wasAuthenticatedRef = useRef(false);
 
   const refreshOidcSession = useCallback(async () => {
     try {
@@ -81,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         const data = (await res.json()) as { claims: OidcClaims };
         setOidcClaims(data.claims);
+        wasAuthenticatedRef.current = true;
         return true;
       }
       setOidcClaims(null);
@@ -130,14 +140,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [refreshOidcSession]);
 
+  // Re-check on tab focus and every 60 s while visible; if a session that
+  // existed is gone, send the user to /auth/login like every other 401.
   useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState !== 'visible') return;
-      void refreshOidcSession();
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+    return startSessionPolling(async () => {
+      const authenticated = await refreshOidcSession();
+      if (!authenticated && wasAuthenticatedRef.current) handleUnauthorized();
+    });
   }, [refreshOidcSession]);
+
+  // Another tab of this origin signed out.
+  useEffect(() => {
+    return listenForLogout(() => {
+      setOidcClaims(null);
+      if (wasAuthenticatedRef.current) handleUnauthorized();
+    });
+  }, []);
 
   const user = claimsToUser(oidcClaims);
   const oidcAuthenticated = user !== null;
@@ -183,6 +201,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Ignore — logout must still proceed.
     }
+    // Tell other tabs first, then end the SSO session in this one.
+    broadcastLogout();
     window.location.href = '/auth/logout';
   };
 
