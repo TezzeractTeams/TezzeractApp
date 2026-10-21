@@ -201,6 +201,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Ignore — logout must still proceed.
     }
+    // Drop this browser's local Supabase session only (no network revoke of
+    // other devices); fire-and-forget so navigation is never blocked.
+    void supabase.auth.signOut({ scope: 'local' }).catch(() => {});
     // Tell other tabs first, then end the SSO session in this one.
     broadcastLogout();
     window.location.href = '/auth/logout';

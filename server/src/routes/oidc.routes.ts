@@ -10,6 +10,7 @@ import {
 } from '../utils/oidc.js';
 import { verifyLogoutToken } from '../utils/backchannelLogout.js';
 import { revokeSession } from '../utils/revokedSessions.js';
+import { sanitizeNextPath } from '../utils/safeNext.js';
 
 const router = Router();
 
@@ -58,26 +59,34 @@ function handleSilentAuthorizeError(
   return silentProbeDoneRedirect(res, next, origin);
 }
 
-/**
- * Only ever a same-origin, root-relative path. Guards against the "next"
- * cookie being used to build an open redirect.
- */
-function sanitizeNextPath(next: unknown): string {
-  if (typeof next !== 'string' || !next.startsWith('/') || next.startsWith('//')) {
-    return '/';
-  }
-  return next;
-}
-
 function clientOrigin(): string {
   return (process.env.CLIENT_URL || '').replace(/\/$/, '');
 }
 
-function clearTransientCookies(res: import('express').Response) {
-  res.clearCookie('pkce_verifier', { path: '/' });
-  res.clearCookie('oauth_state', { path: '/' });
-  res.clearCookie('auth_next', { path: '/' });
-  res.clearCookie('auth_silent', { path: '/' });
+/**
+ * Per-login-attempt cookies are suffixed with the OAuth `state`, so two tabs
+ * logging in at once never overwrite each other's PKCE verifier. The
+ * presence of `pkce_verifier_<state>` for the returned `state` is also the
+ * CSRF check: only a browser that started this exact attempt has it.
+ */
+const STATE_PATTERN = /^[A-Za-z0-9_-]{16,128}$/;
+
+function validState(state: unknown): state is string {
+  return typeof state === 'string' && STATE_PATTERN.test(state);
+}
+
+const flowCookies = (state: string) => ({
+  verifier: `pkce_verifier_${state}`,
+  next: `auth_next_${state}`,
+  silent: `auth_silent_${state}`,
+});
+
+function clearTransientCookies(res: import('express').Response, state?: string) {
+  if (!validState(state)) return;
+  const names = flowCookies(state);
+  res.clearCookie(names.verifier, { path: '/' });
+  res.clearCookie(names.next, { path: '/' });
+  res.clearCookie(names.silent, { path: '/' });
 }
 
 function clearTokenCookies(res: import('express').Response) {
@@ -102,11 +111,11 @@ router.get('/login', (req, res) => {
   const silent = req.query.silent === '1';
   const next = sanitizeNextPath(req.query.next);
 
-  res.cookie('pkce_verifier', codeVerifier, transientCookieOptions());
-  res.cookie('oauth_state', state, transientCookieOptions());
-  res.cookie('auth_next', next, transientCookieOptions());
+  const names = flowCookies(state);
+  res.cookie(names.verifier, codeVerifier, transientCookieOptions());
+  res.cookie(names.next, next, transientCookieOptions());
   if (silent) {
-    res.cookie('auth_silent', '1', transientCookieOptions());
+    res.cookie(names.silent, '1', transientCookieOptions());
   }
 
   const params = new URLSearchParams({
@@ -124,11 +133,12 @@ router.get('/login', (req, res) => {
 });
 
 router.get('/callback', async (req, res) => {
-  const { code, state, error } = req.query;
-  const cookieState = req.cookies?.oauth_state;
-  const codeVerifier = req.cookies?.pkce_verifier;
-  const next = sanitizeNextPath(req.cookies?.auth_next);
-  const wasSilent = req.cookies?.auth_silent === '1';
+  const { code, error } = req.query;
+  const state = validState(req.query.state) ? req.query.state : undefined;
+  const names = state ? flowCookies(state) : undefined;
+  const codeVerifier = names ? req.cookies?.[names.verifier] : undefined;
+  const next = sanitizeNextPath(names ? req.cookies?.[names.next] : undefined);
+  const wasSilent = names ? req.cookies?.[names.silent] === '1' : false;
   const origin = clientOrigin();
 
   /**
@@ -140,7 +150,7 @@ router.get('/callback', async (req, res) => {
    * surface an error for the interactive (non-silent) flow.
    */
   if (typeof error === 'string') {
-    clearTransientCookies(res);
+    clearTransientCookies(res, state);
     if (wasSilent) {
       return handleSilentAuthorizeError(res, error, next, origin);
     }
@@ -149,12 +159,10 @@ router.get('/callback', async (req, res) => {
 
   if (
     typeof code !== 'string' ||
-    typeof state !== 'string' ||
-    !cookieState ||
-    !codeVerifier ||
-    state !== cookieState
+    !state ||
+    !codeVerifier
   ) {
-    clearTransientCookies(res);
+    clearTransientCookies(res, state);
     if (wasSilent) {
       return silentProbeDoneRedirect(res, next, origin);
     }
@@ -175,7 +183,7 @@ router.get('/callback', async (req, res) => {
     });
 
     if (!tokenResponse.ok) {
-      clearTransientCookies(res);
+      clearTransientCookies(res, state);
       if (wasSilent) {
         return silentProbeDoneRedirect(res, next, origin);
       }
@@ -189,7 +197,7 @@ router.get('/callback', async (req, res) => {
     };
 
     if (!tokens.access_token) {
-      clearTransientCookies(res);
+      clearTransientCookies(res, state);
       if (wasSilent) {
         return silentProbeDoneRedirect(res, next, origin);
       }
@@ -207,11 +215,11 @@ router.get('/callback', async (req, res) => {
       res.cookie('id_token', tokens.id_token, cookieOpts);
     }
 
-    clearTransientCookies(res);
+    clearTransientCookies(res, state);
     return res.redirect(origin ? `${origin}${next}` : next);
   } catch (err) {
     console.error('OIDC callback error:', err);
-    clearTransientCookies(res);
+    clearTransientCookies(res, state);
     clearTokenCookies(res);
     if (wasSilent) {
       return silentProbeDoneRedirect(res, next, origin);
